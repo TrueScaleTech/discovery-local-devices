@@ -27,12 +27,14 @@ node_modules/
 
 # Local application data: device inventory, scan history, settings.
 # These hold MAC addresses and hostnames from a real network and must never be committed.
+# Anchored to the repository root: an unanchored "data/" would also swallow the
+# package's own data directory, and the shipped vendor list with it.
 *.db
 *.db-journal
 *.sqlite
 *.sqlite3
-data/
-scans/
+/data/
+/scans/
 config.local.*
 .env
 .env.*

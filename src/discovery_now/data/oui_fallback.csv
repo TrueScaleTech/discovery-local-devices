@@ -1,0 +1,129 @@
+// Small built-in vendor list, used when the full IEEE registry has not been
+// downloaded. It covers the kit most often found on a home network and in a lab;
+// it is deliberately short, not a copy of the registry.
+// Run `discovery-now oui update` to fetch the full list from standards-oui.ieee.org.
+// Format: OUI prefix (first three octets, no separators), vendor name.
+000C29,VMware
+000569,VMware
+001C14,VMware
+005056,VMware
+080027,Oracle VirtualBox
+525400,QEMU / KVM
+00155D,Microsoft Hyper-V
+00163E,Xen
+B827EB,Raspberry Pi Foundation
+DCA632,Raspberry Pi
+E45F01,Raspberry Pi
+28CDC1,Raspberry Pi
+D83ADD,Raspberry Pi
+2CCF67,Raspberry Pi
+240AC4,Espressif
+30AEA4,Espressif
+84F3EB,Espressif
+8CAAB5,Espressif
+A4CF12,Espressif
+BCDDC2,Espressif
+ECFABC,Espressif
+5CCF7F,Espressif
+600194,Espressif
+18FE34,Espressif
+00000C,Cisco
+001AA1,Cisco
+00260B,Cisco
+00090F,Fortinet
+906CAC,Fortinet
+704CA5,Fortinet
+001C7F,Check Point
+24A43C,Ubiquiti
+788A20,Ubiquiti
+0418D6,Ubiquiti
+FCECDA,Ubiquiti
+68D79A,Ubiquiti
+7483C2,Ubiquiti
+000B86,Aruba Networks
+6CF37F,Aruba Networks
+000585,Juniper Networks
+2C6BF5,Juniper Networks
+00146C,Netgear
+204E7F,Netgear
+A040A0,Netgear
+50C7BF,TP-Link
+14CC20,TP-Link
+A0F3C1,TP-Link
+EC086B,TP-Link
+00055D,D-Link
+1C7EE5,D-Link
+78542E,D-Link
+000C6E,ASUSTek
+2C56DC,ASUSTek
+AC9E17,ASUSTek
+1CB72C,ASUSTek
+00040E,AVM
+3810D5,AVM
+C80E14,AVM
+001349,Zyxel
+5CF4AB,Zyxel
+00E0FC,Huawei
+4846FB,Huawei
+001B21,Intel
+3C970E,Intel
+94659C,Intel
+A0A8CD,Intel
+7CB0C2,Intel
+00216A,Intel
+001422,Dell
+B82A72,Dell
+F8BC12,Dell
+001B78,Hewlett-Packard
+3CD92B,Hewlett-Packard
+705A0F,Hewlett-Packard
+000393,Apple
+000A27,Apple
+001B63,Apple
+001EC2,Apple
+002500,Apple
+28CFDA,Apple
+3C0754,Apple
+7CD1C3,Apple
+A45E60,Apple
+F01898,Apple
+D0817A,Apple
+001632,Samsung
+78471D,Samsung
+5C0A5B,Samsung
+8C7712,Samsung
+C819F7,Samsung
+001C62,LG Electronics
+2C598A,LG Electronics
+A816B2,LG Electronics
+00041F,Sony
+544249,Sony
+FC0FE6,Sony
+0009BF,Nintendo
+98B6E9,Nintendo
+7CBB8A,Nintendo
+008077,Brother
+30055C,Brother
+001E8F,Canon
+2C9EFC,Canon
+0026AB,Seiko Epson
+44D244,Seiko Epson
+001132,Synology
+00089B,QNAP
+002590,Super Micro
+0CC47A,Super Micro
+3CECEF,Super Micro
+001788,Philips Lighting
+000E58,Sonos
+5CAAFD,Sonos
+48A6B8,Sonos
+B83E59,Roku
+CC6DA0,Roku
+44650D,Amazon
+F0D2F1,Amazon
+6837E9,Amazon
+74C246,Amazon
+3C5AB4,Google
+546009,Google
+641666,Google
+00E04C,Realtek
