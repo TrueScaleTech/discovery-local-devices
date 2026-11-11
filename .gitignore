@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node (desktop UI, if used)
+node_modules/
+*.tsbuildinfo
+
+# Packaging output
+*.spec
+*.AppImage
+*.deb
+*.msi
+
+# Local application data: device inventory, scan history, settings.
+# These hold MAC addresses and hostnames from a real network and must never be committed.
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+data/
+scans/
+config.local.*
+.env
+.env.*
+!.env.example
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
