@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import io
 import json
 
+import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
-from discovery_now import __version__
+from discovery_now import __version__, cli
 from discovery_now.cli import app
+from discovery_now.config import Settings
+from discovery_now.discovery import ScanReport
 from discovery_now.models import Observation
 from discovery_now.store import Store
 
@@ -89,3 +94,25 @@ class TestConfigCommands:
         assert result.exit_code == 0
         result = runner.invoke(app, ["config", "show"])
         assert json.loads(result.stdout)["offline_after"] == 3
+
+
+class TestProgressOnLegacyConsoles:
+    def test_the_progress_display_survives_a_legacy_code_page(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Redirecting to NUL on Windows looks like a terminal but encodes with a
+        # legacy code page, and the Braille spinner cannot be written in one. The
+        # scan used to die with UnicodeEncodeError before printing anything.
+        stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", write_through=True)
+        monkeypatch.setattr(cli, "console", Console(file=stream, force_terminal=True, width=80))
+
+        def fake_scan(
+            settings: Settings, *, networks: object = None, progress: object = None
+        ) -> ScanReport:
+            if callable(progress):
+                progress("ping sweep", 1, 2)
+            return ScanReport()
+
+        monkeypatch.setattr(cli, "run_scan", fake_scan)
+        report = cli._run_with_progress(Settings(), show=True)
+        assert report.found == 0

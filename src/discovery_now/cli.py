@@ -121,7 +121,11 @@ def _run_with_progress(settings: Settings, *, show: bool) -> ScanReport:
         return run_scan(settings)
 
     columns = (
-        SpinnerColumn(),
+    # The default spinner is made of Braille characters, which a legacy Windows code
+    # page cannot encode: scanning with output sent to NUL used to crash on it. A
+    # plain ASCII spinner is used whenever the console cannot write them.
+    spinner = "line" if console.options.ascii_only else "dots"
+        SpinnerColumn(spinner),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
