@@ -7,8 +7,10 @@ Thanks for taking a look. Issues and pull requests are welcome.
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+pip install -e ".[dev,gui]"
 ```
+
+The `gui` extra is only needed for the desktop app and its tests.
 
 ## Before opening a pull request
 
@@ -44,6 +46,18 @@ an `Enum`, a number check for `int` and `float`, a toggle for `bool | None`).
 `tests/test_menu.py` checks that every command and option of the CLI is reachable
 from the menu, and pins how a few of them are understood. If a dependency update
 changes how the parser reports types, that is where it will show.
+
+## The desktop app
+
+It lives in `src/discovery_now/gui/`. Everything that decides what the window
+shows (filters, search, counts, wording) is in `viewmodel.py` and has no Qt in it,
+so it is tested without a display in `tests/test_gui_viewmodel.py`. Put new
+decisions there, and keep the widgets a thin layer that draws them.
+
+`tests/test_gui.py` drives the real window on Qt's `offscreen` platform: it
+selects rows, types into fields and clicks buttons, with the network replaced by a
+fake scan. Colours are tokens in `theme.py`; do not hard-code one elsewhere, or
+one of the two appearances will go wrong.
 
 ## What belongs here, and what does not
 

@@ -29,9 +29,11 @@ It does not:
 - send your inventory anywhere, or fetch anything from the internet. There is no
   telemetry, no update check and no cloud component.
 
-The interactive menu (`discoverynow menu`) adds nothing to this list. It runs the
-same commands, through the same parser, with the same checks, and shows the exact
-command line it ran.
+The interactive menu (`discoverynow menu`) and the desktop app (`discoverynow gui`)
+add nothing to this list. The menu runs the same commands, through the same
+parser, with the same checks. The app runs the same scan engine and the same
+guards, on a background thread, and shows desktop notifications through the
+operating system. Neither sends anything off the machine.
 
 ## Guards
 

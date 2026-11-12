@@ -8,12 +8,13 @@ finds, and then keeps watching: it remembers when each device first appeared,
 flags the ones that are new, and reports when something goes offline, changes
 address, or opens a port it did not have yesterday.
 
-It runs as a command-line tool today. A desktop application for Windows and Linux
-is next, built on the same engine.
+It runs as a command-line tool and as a desktop app, both built on the same
+engine and sharing the same inventory.
 
-> **Status: early development (v0.1).** The discovery engine, the inventory and
-> the CLI work. The desktop app, notifications and the security checks listed in
-> the roadmap are not built yet.
+> **Status: early development (v0.1).** The discovery engine, the inventory, the
+> CLI and a first version of the desktop app (tested on Windows) work. Linux
+> packaging, richer notifications and the security checks listed in the roadmap
+> are not built yet.
 
 ## No administrator rights needed
 
@@ -43,6 +44,12 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+For the desktop app, install the optional `gui` extra, which adds PySide6 (Qt):
+
+```bash
+pip install -e ".[gui]"
+```
+
 ## Quick start
 
 ```bash
@@ -57,6 +64,9 @@ discoverynow devices list
 
 # Or skip the typing: browse every command and its options in a menu
 discoverynow menu
+
+# Or use the window
+discoverynow gui
 ```
 
 A scan looks like this (example data):
@@ -149,6 +159,50 @@ discoverynow devices list --unapproved
 Approving is a statement that a device belongs here. Everything you have not
 approved stays flagged, so "I have never looked at this" never looks the same as
 "this is mine".
+
+## The desktop app
+
+```bash
+discoverynow gui
+```
+
+The window shows the same inventory as the command line, and both can be used
+side by side.
+
+- **Devices.** Every device in a table you can sort by any column, filter with the
+  buttons above it (All, Online, Offline, New, Not approved, each with its count)
+  and search by name, address, MAC, vendor, guessed kind or notes. New devices
+  wear a `NEW` tag until the new-device window passes (7 days by default).
+- **One device.** Select a row to see everything known about it. Give it a name,
+  write a note, approve it, or forget it. Right-click a row to copy its address or
+  MAC. Right-click a column header to show or hide columns (Ports and First seen
+  start hidden).
+- **Activity.** The history of everything that happened, newest first: devices
+  discovered, gone offline, back online, changed address, opened or closed ports.
+- **Keeping watch.** The app scans when it starts and then on its own, every 5
+  minutes by default (the choice is in the header). A desktop notification tells
+  you when a new device appears on a network it already knew. The very first scan
+  does not announce every device it finds.
+- **Export.** Save the inventory as CSV or JSON, optionally hiding private details.
+
+Shortcuts: `F5` scan now, `Ctrl+F` search, `Ctrl+1` / `Ctrl+2` switch between
+Devices and Activity. The window follows the system's light or dark appearance.
+
+What the window remembers (its size, the columns you hid, the scan interval, the
+notification switch) is kept in `gui.ini` next to the configuration file, not in
+the Windows registry.
+
+### A Windows build with no Python needed
+
+```powershell
+.\packaging\build-windows.ps1
+```
+
+This produces `dist\DiscoveryNow\DiscoveryNow.exe` and a zip of the folder, built
+with PyInstaller. If the repository sits deep inside nested folders, pass a short
+output path (`-OutDir C:\dn-build`): Windows stops at 260 characters unless long
+paths are switched on. The `.exe` is not signed, so Windows SmartScreen will warn
+the first time it is run.
 
 ## The interactive menu
 
@@ -252,6 +306,7 @@ defused with a leading apostrophe.
 | `events` | Recent history across all devices |
 | `export` | Write the device list to a CSV or JSON file |
 | `menu` | An interactive menu over every command and option |
+| `gui` | Open the desktop app (needs the `gui` extra) |
 | `devices list` | The inventory, with `--online`, `--new`, `--unapproved` |
 | `devices show` | Everything known about one device, with its history |
 | `devices rename` / `note` / `approve` / `forget` | Annotate the inventory |
@@ -297,20 +352,23 @@ are refused unless you turn that off deliberately. See [SECURITY.md](SECURITY.md
 ## Roadmap
 
 - [x] Discovery engine, inventory, online/offline monitoring, CLI
-- [ ] Notifications: new device, device offline, webhook and desktop
-- [ ] Desktop app for Windows and Linux
+- [x] Desktop app, first version (Windows)
+- [ ] Desktop app: more polish, then Linux packaging
+- [ ] Notifications: device offline, webhook, and richer desktop alerts
 - [ ] Security checks: MAC and IP changes, ARP anomalies, rogue DHCP, risky ports
 - [ ] Packaged builds and a tagged release
 
 ## Development
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,gui]"
 ruff check . && ruff format --check . && mypy && pytest
 ```
 
-The test suite needs no network: it parses captured command output, talks to
-loopback sockets, and runs the inventory against temporary databases.
+The test suite needs no network and no display: it parses captured command output,
+talks to loopback sockets, runs the inventory against temporary databases, and
+drives the desktop window on Qt's invisible `offscreen` platform. The window's
+tests skip themselves when PySide6 is not installed.
 
 ## License
 
