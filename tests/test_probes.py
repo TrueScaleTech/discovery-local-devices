@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import socket
+import threading
+import time
 from collections.abc import Iterator
 
 import pytest
@@ -82,3 +84,32 @@ class TestTcpSweep:
     def test_nothing_to_do_without_targets_or_ports(self) -> None:
         assert probes.tcp_sweep([], [80], timeout=1.0) == {}
         assert probes.tcp_sweep(["127.0.0.1"], [], timeout=1.0) == {}
+
+
+class TestPingSweepConcurrency:
+    def test_never_runs_more_pings_at_once_than_the_limit(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Every ping is a process, and starting too many at once is what made scans
+        # hang on Windows. The cap has to hold however many workers are asked for.
+        lock = threading.Lock()
+        running = 0
+        peak = 0
+
+        def slow_ping(ip: str, *, timeout: float = 1.0) -> probes.PingResult:
+            nonlocal running, peak
+            with lock:
+                running += 1
+                peak = max(peak, running)
+            time.sleep(0.02)
+            with lock:
+                running -= 1
+            return probes.PingResult(alive=True)
+
+        monkeypatch.setattr(probes, "ping", slow_ping)
+        ips = [f"10.0.0.{n}" for n in range(1, 201)]
+        results = probes.ping_sweep(ips, workers=500)
+
+        assert len(results) == 200
+        assert peak <= probes.PING_WORKERS_MAX
+        assert peak > 1  # still parallel, not accidentally serial

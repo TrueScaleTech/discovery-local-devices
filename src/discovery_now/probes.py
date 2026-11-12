@@ -11,10 +11,11 @@ import math
 import platform
 import re
 import socket
-import subprocess
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+
+from ._proc import run_capture
 
 #: Ports used only to decide whether a silent host exists at all. Kept very short:
 #: this runs against every address in the subnet, most of which are empty.
@@ -24,6 +25,19 @@ _TTL_RE = re.compile(r"ttl\s*[=:]\s*\d+", re.IGNORECASE)
 _RTT_RE = re.compile(r"[<=]\s*([\d.,]+)\s*ms", re.IGNORECASE)
 
 ProgressCallback = Callable[[int, int], None]
+
+#: Extra seconds allowed for a ping process to start before it is given up on.
+_START_MARGIN = 4.0
+
+#: The most ``ping`` processes ever running at once.
+#:
+#: A thread per socket is cheap; a thread per *process* is not. Starting a hundred
+#: and more pings at the same instant, on Windows, was observed to leave scans
+#: hanging or throwing handle errors, while 64 at a time ran clean and finished in
+#: about the same time, because process start-up is the bottleneck, not the wait.
+#: This limit applies only to ping. The TCP probes are plain sockets and keep the
+#: configured worker count.
+PING_WORKERS_MAX = 48
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,13 +57,6 @@ class PortResult:
     #: refused connection is proof that a host is there: only a live IP stack
     #: bothers to say no.
     responded: bool = False
-
-
-def _no_window_flags() -> int:
-    """Keep Windows from flashing a console for every ping."""
-    if platform.system() == "Windows":
-        return int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    return 0
 
 
 def _ping_command(ip: str, timeout: float) -> list[str]:
@@ -87,21 +94,11 @@ def parse_ping_output(returncode: int, output: str) -> PingResult:
 
 def ping(ip: str, *, timeout: float = 1.0) -> PingResult:
     """Send one echo request and read the answer."""
-    try:
-        # Fixed argument list, no shell: the address comes from our own target list.
-        completed = subprocess.run(
-            _ping_command(ip, timeout),
-            capture_output=True,
-            timeout=timeout + 2.0,
-            check=False,
-            creationflags=_no_window_flags(),
-        )
-    except (OSError, subprocess.SubprocessError):
+    # The margin covers starting the process, which is not instant on a busy machine.
+    finished = run_capture(_ping_command(ip, timeout), timeout=timeout + _START_MARGIN)
+    if finished is None:
         return PingResult(alive=False)
-
-    return parse_ping_output(
-        completed.returncode, completed.stdout.decode("utf-8", errors="replace")
-    )
+    return parse_ping_output(*finished)
 
 
 def ping_sweep(
@@ -116,7 +113,8 @@ def ping_sweep(
     if not ips:
         return results
     done = 0
-    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(ips)))) as pool:
+    limit = max(1, min(workers, PING_WORKERS_MAX, len(ips)))
+    with ThreadPoolExecutor(max_workers=limit) as pool:
         futures = {pool.submit(ping, ip, timeout=timeout): ip for ip in ips}
         for future in as_completed(futures):
             ip = futures[future]

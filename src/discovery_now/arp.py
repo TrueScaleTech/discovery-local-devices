@@ -9,9 +9,9 @@ mapping, obtained without asking the user for privileges.
 from __future__ import annotations
 
 import platform
-import subprocess
 from pathlib import Path
 
+from ._proc import run_capture
 from .net import find_ipv4, normalize_mac
 
 #: Linux keeps the cache in a text file; reading it beats spawning a process.
@@ -23,25 +23,8 @@ _COMMAND_TIMEOUT = 5.0
 
 def _run(command: list[str]) -> str | None:
     """Run a command and return its output, or None if it is unavailable."""
-    flags = 0
-    if platform.system() == "Windows":
-        # Without this every probe would flash a console window, which would make
-        # the desktop app unusable.
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    try:
-        # Fixed argument lists, never a shell string: nothing user-supplied reaches here.
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            timeout=_COMMAND_TIMEOUT,
-            check=False,
-            creationflags=flags,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    # Console output is localized and not always UTF-8, and we only read the
-    # numbers out of it, so undecodable bytes are replaced rather than fatal.
-    return completed.stdout.decode("utf-8", errors="replace")
+    finished = run_capture(command, timeout=_COMMAND_TIMEOUT)
+    return None if finished is None else finished[1]
 
 
 def parse_table(text: str) -> dict[str, str]:
