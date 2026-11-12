@@ -116,3 +116,20 @@ class TestProgressOnLegacyConsoles:
         monkeypatch.setattr(cli, "run_scan", fake_scan)
         report = cli._run_with_progress(Settings(), show=True)
         assert report.found == 0
+
+
+class TestDesktopCommand:
+    def test_without_pyside6_it_says_how_to_get_it(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import sys
+
+        # A None entry makes an import fail as if the package were not installed. Every
+        # PySide6 module has to be blocked: one that is already loaded would let the
+        # import through and start a real window.
+        for name in [key for key in sys.modules if key.split(".")[0] in {"PySide6", "shiboken6"}]:
+            monkeypatch.setitem(sys.modules, name, None)
+        monkeypatch.setitem(sys.modules, "PySide6", None)
+        for name in [key for key in sys.modules if key.startswith("discovery_now.gui.")]:
+            monkeypatch.delitem(sys.modules, name)
+        result = runner.invoke(app, ["gui"])
+        assert result.exit_code == 1
+        assert "discovery-now[gui]" in result.output.replace(chr(10), "")

@@ -32,6 +32,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The desktop app. Widgets only, which keeps the install far smaller than "PySide6".
+gui = ["PySide6-Essentials>=6.7"]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

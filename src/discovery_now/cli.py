@@ -13,6 +13,7 @@ from typing import Annotated, Any
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
 from . import APP_NAME, __version__
@@ -65,7 +66,8 @@ def _settings(ctx: typer.Context) -> Settings:
 
 def _fail(message: str) -> None:
     """Report a problem on stderr and stop with a non-zero status."""
-    errors.print(f"[bold red]Error:[/] {message}")
+    # The message may hold square brackets ("pip install x[gui]"): show them as typed.
+    errors.print(f"[bold red]Error:[/] {escape(message)}")
     raise typer.Exit(EXIT_ERROR)
 
 
@@ -392,6 +394,18 @@ def menu() -> None:
         run_menu(app, console=console)
     except MenuUnavailableError as error:
         _fail(str(error))
+
+
+@app.command()
+def gui() -> None:
+    """Open the desktop app."""
+    try:
+        from .gui.app import run
+    except ModuleNotFoundError as error:
+        if (error.name or "").split(".")[0] != "PySide6":
+            raise
+        _fail('The desktop app needs PySide6. Install it with: pip install "discovery-now[gui]"')
+    raise typer.Exit(run())
 
 
 # -- devices -----------------------------------------------------------------

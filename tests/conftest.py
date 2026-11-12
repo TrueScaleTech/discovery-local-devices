@@ -6,10 +6,14 @@ someone's network must never have its test suite read or write the real one.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+
+# The desktop tests draw real widgets; no display is needed or wanted.
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from discovery_now import oui
 from discovery_now.store import Store
