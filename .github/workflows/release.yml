@@ -86,14 +86,17 @@ jobs:
           # hold several drafts for the same tag and neither "view" nor "upload"
           # can tell them apart. Clear any draft for this tag first, then make
           # exactly one. Only drafts are touched: a published release is never
-          # one of these.
-          $stale = @(gh api "repos/${{ github.repository }}/releases" `
-            --jq ".[] | select(.draft and .tag_name == \"$tag\") | .id")
+          # one of these. The filtering is done in PowerShell rather than in a
+          # jq expression, because a backslash is not an escape inside a
+          # PowerShell string and the quotes a jq filter needs around the tag
+          # would end the argument early.
+          $json = gh api "repos/${{ github.repository }}/releases" --paginate
           if ($LASTEXITCODE -ne 0) { throw "could not list the releases" }
-          foreach ($id in $stale) {
-            Write-Host "Removing an earlier draft for $tag ($id)."
-            gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
-            if ($LASTEXITCODE -ne 0) { throw "could not remove draft $id" }
+          $stale = @($json | ConvertFrom-Json | Where-Object { $_.draft -and $_.tag_name -eq $tag })
+          foreach ($old in $stale) {
+            Write-Host "Removing an earlier draft for $tag ($($old.id))."
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$($old.id)"
+            if ($LASTEXITCODE -ne 0) { throw "could not remove draft $($old.id)" }
           }
 
           gh release create $tag --draft --title "Discovery Now $tag" `
