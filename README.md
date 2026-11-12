@@ -47,17 +47,19 @@ pip install -e .
 
 ```bash
 # Which subnets would be scanned by default?
-discovery-now interfaces
+discoverynow interfaces
 
 # Scan them, and remember what was found
-discovery-now scan
+discoverynow scan
 
 # Read the hardware vendor out of every MAC address (optional, ~3 MB, once)
-discovery-now oui update
+discoverynow oui update
 
 # What is on the network?
-discovery-now devices list
+discoverynow devices list
 ```
+
+The command is `discoverynow`. The hyphenated `discovery-now` works too.
 
 A scan looks like this (example data):
 
@@ -81,10 +83,24 @@ new      192.168.1.31  Espressif
 That phone has no vendor on purpose: its MAC is randomized, which Discovery Now
 recognises rather than guessing wrongly.
 
+## About the vendor list
+
+The first three bytes of a MAC address identify the company that made the network
+chip. The IEEE publishes who owns which prefix, and `discoverynow oui update`
+downloads that public registry (about 40,000 prefixes, around 1 MB) into your data
+directory. It is what turns `b8:27:eb:...` into "Raspberry Pi" in the Vendor
+column.
+
+- It is optional: without it, a short built-in list of about 120 common makers is
+  used.
+- It is a one-way download of public data over HTTPS, and only when you run the
+  command. Nothing about your network is sent anywhere.
+- Phones and laptops that randomize their MAC address have no vendor on purpose.
+
 ## Keeping watch
 
 ```bash
-discovery-now watch
+discoverynow watch
 ```
 
 It scans every five minutes and prints only what changed:
@@ -105,10 +121,10 @@ A fresh inventory is a list of strangers. These turn it into something you can
 read at a glance, and keep a new arrival from hiding in a crowd of known devices:
 
 ```bash
-discovery-now devices rename 192.168.1.44 "NAS"
-discovery-now devices note 192.168.1.31 "Smart plug, living room"
-discovery-now devices approve NAS
-discovery-now devices list --unapproved
+discoverynow devices rename 192.168.1.44 "NAS"
+discoverynow devices note 192.168.1.31 "Smart plug, living room"
+discoverynow devices approve NAS
+discoverynow devices list --unapproved
 ```
 
 Approving is a statement that a device belongs here. Everything you have not
@@ -138,8 +154,8 @@ or a CI step.
 ## Configuration
 
 ```bash
-discovery-now config init   # writes a commented file
-discovery-now config path   # says where it is
+discoverynow config init   # writes a commented file
+discoverynow config path   # says where it is
 ```
 
 Worth knowing about:
@@ -155,7 +171,7 @@ Worth knowing about:
 
 ## Where your data lives
 
-One SQLite file, in the per-user data directory that `discovery-now status`
+One SQLite file, in the per-user data directory that `discoverynow status`
 prints. It holds MAC addresses, hostnames and the history of your network, so
 treat it as personal data: it never leaves the machine, there is no telemetry and
 no cloud component, and the repository is set up to make committing it difficult.
