@@ -98,3 +98,47 @@ class TestResolveTargets:
     def test_rejects_text_that_is_not_a_subnet(self) -> None:
         with pytest.raises(net.TargetError):
             net.resolve_targets(["my-network"], allow_public=False, max_hosts=4096)
+
+
+class TestDefaultGateways:
+    def test_reads_the_linux_routing_table(self) -> None:
+        text = "default via 192.168.1.254 dev wlan0 proto dhcp src 192.168.1.46 metric 600"
+        assert net.parse_gateways(text) == ["192.168.1.254"]
+
+    def test_reads_the_windows_routing_table(self) -> None:
+        # The columns are destination, mask, gateway, interface, metric.
+        text = (
+            "===========================================================\n"
+            "Active Routes:\n"
+            "Network Destination        Netmask          Gateway       Interface  Metric\n"
+            "          0.0.0.0          0.0.0.0    192.168.1.254    192.168.1.46     35\n"
+            "        127.0.0.0        255.0.0.0         On-link         127.0.0.1    331\n"
+        )
+        assert net.parse_gateways(text) == ["192.168.1.254"]
+
+    def test_a_translated_table_is_read_the_same_way(self) -> None:
+        # Only the shape of the row is matched, never the headings around it.
+        text = (
+            "Routage actif :\n"
+            "Destination r\u00e9seau    Masque r\u00e9seau  Adr. passerelle   Adr. interface\n"
+            "          0.0.0.0          0.0.0.0     10.0.0.1        10.0.0.57     25\n"
+        )
+        assert net.parse_gateways(text) == ["10.0.0.1"]
+
+    def test_each_gateway_is_listed_once(self) -> None:
+        text = "default via 10.0.0.1 dev eth0\ndefault via 10.0.0.1 dev wlan0\n"
+        assert net.parse_gateways(text) == ["10.0.0.1"]
+
+    def test_several_ways_out_are_all_kept(self) -> None:
+        text = "default via 10.0.0.1 dev eth0\ndefault via 10.0.0.2 dev wlan0\n"
+        assert net.parse_gateways(text) == ["10.0.0.1", "10.0.0.2"]
+
+    def test_nothing_in_it_means_nothing_out(self) -> None:
+        assert net.parse_gateways("") == []
+        assert net.parse_gateways("no routes here\nsome other output\n") == []
+
+    def test_a_route_to_nowhere_is_not_a_gateway(self) -> None:
+        assert net.parse_gateways("default via 0.0.0.0 dev eth0") == []
+
+    def test_nonsense_in_the_gateway_column_is_skipped(self) -> None:
+        assert net.parse_gateways("default via on-link dev eth0") == []

@@ -10,6 +10,8 @@ from dataclasses import dataclass
 
 import psutil
 
+from ._proc import run_capture
+
 _MAC_RE = re.compile(r"(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}")
 _IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
@@ -109,6 +111,63 @@ def local_macs() -> dict[str, str]:
         for address in ipv4:
             table[address] = mac
     return table
+
+
+#: The route that means "everything else" in a Windows routing table. It is a
+#: token being read, never an address anything binds to.
+_ANY_ROUTE = "0.0.0.0"  # noqa: S104
+
+
+def parse_gateways(text: str) -> list[str]:
+    """The default gateways in the output of ``ip route`` or ``route print``.
+
+    Both are read by shape rather than by column or by word, so a translated
+    Windows and any iproute2 version are read the same way:
+
+    - ``default via 192.168.1.254 dev wlan0`` (Linux)
+    - ``0.0.0.0  0.0.0.0  192.168.1.254  192.168.1.46  35`` (Windows)
+    """
+    found: list[str] = []
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        linux = parts[0] == "default" and parts[1] == "via"
+        windows = parts[0] == _ANY_ROUTE and parts[1] == _ANY_ROUTE
+        if not (linux or windows):
+            continue
+        try:
+            address = ipaddress.IPv4Address(parts[2])
+        except ValueError:
+            continue
+        if address.is_unspecified or str(address) in found:
+            continue
+        found.append(str(address))
+    return found
+
+
+def default_gateways(*, timeout: float = 2.0) -> list[str]:
+    """Ask the operating system which addresses are its default gateways.
+
+    Returns an empty list when the routing table cannot be read: the map that
+    uses this falls back to working the gateway out from the devices themselves.
+    """
+    commands = (
+        ["ip", "-4", "route", "show", "default"],
+        ["route", "print", "-4"],
+        ["netstat", "-rn"],
+    )
+    for command in commands:
+        result = run_capture(command, timeout=timeout)
+        if result is None:
+            continue
+        status, text = result
+        if status != 0:
+            continue
+        gateways = parse_gateways(text)
+        if gateways:
+            return gateways
+    return []
 
 
 def parse_network(value: str) -> ipaddress.IPv4Network:
