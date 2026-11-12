@@ -125,6 +125,29 @@ Approving is a statement that a device belongs here. Everything you have not
 approved stays flagged, so "I have never looked at this" never looks the same as
 "this is mine".
 
+## Exporting the device list
+
+```bash
+discoverynow export                          # CSV to the terminal
+discoverynow export -o devices.csv           # CSV file, opens straight in Excel
+discoverynow export -o devices.json          # JSON, picked from the extension
+discoverynow export --unapproved --redact -o to-share.csv
+```
+
+The same filters as `devices list` apply (`--online`, `--offline`, `--new`,
+`--unapproved`). With no `-o` the data goes to the terminal and nothing else does,
+so it can be piped. An existing file is never overwritten unless you pass `--force`.
+
+An inventory is a record of a real home, and an export is where it can leave your
+machine. Before sharing one, use **`--redact`**: it hides the unique half of every
+MAC address (`00:11:22:xx:xx:xx`) and removes hostnames, labels and notes, and it
+replaces each device name with `device-<number>`. The vendor, address, open ports
+and state stay, which is what someone helping you troubleshoot needs.
+
+CSV cells that a spreadsheet would run as a formula (a hostname that starts with
+`=`, for instance, which a device on a hostile network can choose for itself) are
+defused with a leading apostrophe.
+
 ## Commands
 
 | Command | What it does |
@@ -134,6 +157,7 @@ approved stays flagged, so "I have never looked at this" never looks the same as
 | `status` | Counts: known, online, offline, new, not approved |
 | `interfaces` | The local interfaces and what would be scanned |
 | `events` | Recent history across all devices |
+| `export` | Write the device list to a CSV or JSON file |
 | `devices list` | The inventory, with `--online`, `--new`, `--unapproved` |
 | `devices show` | Everything known about one device, with its history |
 | `devices rename` / `note` / `approve` / `forget` | Annotate the inventory |

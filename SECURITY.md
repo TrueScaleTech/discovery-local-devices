@@ -43,4 +43,6 @@ It does not:
 The inventory holds MAC addresses, hostnames and IP addresses of devices on your
 network, which can identify people and their habits. It is stored only in a local
 SQLite file, whose location `discoverynow status` prints. Treat it as personal
-data: do not commit it, and think before sharing an export.
+data: do not commit it. `discoverynow export` writes it out, so use `--redact`
+before sharing the result: it hides the unique half of each MAC address and every
+hostname, label and note.

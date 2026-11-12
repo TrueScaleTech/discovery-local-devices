@@ -16,6 +16,7 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
 from . import APP_NAME, __version__
+from . import export as exporting
 from .config import Settings, config_path, database_path
 from .discovery import ScanReport, run_scan
 from .models import Device, ScanOutcome
@@ -120,11 +121,11 @@ def _run_with_progress(settings: Settings, *, show: bool) -> ScanReport:
     if not show:
         return run_scan(settings)
 
-    columns = (
     # The default spinner is made of Braille characters, which a legacy Windows code
     # page cannot encode: scanning with output sent to NUL used to crash on it. A
     # plain ASCII spinner is used whenever the console cannot write them.
     spinner = "line" if console.options.ascii_only else "dots"
+    columns = (
         SpinnerColumn(spinner),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -314,6 +315,76 @@ def events(
         console.print("Nothing recorded yet. Run `discoverynow scan` first.")
         return
     console.print(events_table(history, names, title="Recent events"))
+
+
+@app.command("export")
+def export_devices(
+    ctx: typer.Context,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="File to write. Without it, print to the terminal."),
+    ] = None,
+    fmt: Annotated[
+        exporting.ExportFormat | None,
+        typer.Option(
+            "--format", "-f", help="csv or json. By default taken from the file name, else csv."
+        ),
+    ] = None,
+    force: Annotated[
+        bool, typer.Option("--force", help="Overwrite the file if it already exists.")
+    ] = False,
+    online: Annotated[
+        bool | None, typer.Option("--online/--offline", help="Only devices in this state.")
+    ] = None,
+    new: Annotated[bool, typer.Option("--new", help="Only devices first seen recently.")] = False,
+    unapproved: Annotated[
+        bool, typer.Option("--unapproved", help="Only devices you have not approved.")
+    ] = False,
+    redact: Annotated[
+        bool,
+        typer.Option(
+            "--redact",
+            help="Hide the unique half of each MAC, and every hostname, label and note.",
+        ),
+    ] = False,
+) -> None:
+    """Write the device list to a CSV or JSON file, or print it.
+
+    The inventory holds hardware addresses and names that identify people. Use
+    --redact before sharing an export outside your own machine.
+    """
+    settings = _settings(ctx)
+    window = _new_window(settings)
+
+    chosen = fmt
+    if chosen is None:
+        is_json = output is not None and output.suffix.lower() == ".json"
+        chosen = exporting.ExportFormat.JSON if is_json else exporting.ExportFormat.CSV
+
+    if output is not None and output.exists() and not force:
+        _fail(f"{output} already exists. Pass --force to overwrite it.")
+
+    with Store() as store:
+        found = store.devices(
+            online=online,
+            approved=False if unapproved else None,
+            new_within=window if new else None,
+        )
+
+    text = exporting.render(exporting.rows(found, new_within=window, redact=redact), chosen)
+
+    if output is None:
+        # Nothing but the data on stdout, so it can be piped or redirected.
+        typer.echo(text, nl=False)
+        return
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # A byte-order mark makes Excel on Windows read accents correctly; JSON has none.
+    encoding = "utf-8-sig" if chosen is exporting.ExportFormat.CSV else "utf-8"
+    with output.open("w", encoding=encoding, newline="") as handle:
+        handle.write(text)
+    note = " Hostnames, labels, notes and MAC endings are hidden." if redact else ""
+    console.print(f"Exported {len(found)} device(s) to {output}.{note}")
 
 
 # -- devices -----------------------------------------------------------------
