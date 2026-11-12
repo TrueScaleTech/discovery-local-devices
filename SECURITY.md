@@ -29,6 +29,10 @@ It does not:
 - send your inventory anywhere, or fetch anything from the internet. There is no
   telemetry, no update check and no cloud component.
 
+The interactive menu (`discoverynow menu`) adds nothing to this list. It runs the
+same commands, through the same parser, with the same checks, and shows the exact
+command line it ran.
+
 ## Guards
 
 - Addresses outside private ranges are refused unless `allow_public_ranges` is

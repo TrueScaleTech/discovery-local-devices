@@ -54,6 +54,9 @@ discoverynow scan
 
 # What is on the network?
 discoverynow devices list
+
+# Or skip the typing: browse every command and its options in a menu
+discoverynow menu
 ```
 
 A scan looks like this (example data):
@@ -125,6 +128,74 @@ Approving is a statement that a device belongs here. Everything you have not
 approved stays flagged, so "I have never looked at this" never looks the same as
 "this is mine".
 
+## The interactive menu
+
+```bash
+discoverynow menu
+```
+
+If you would rather browse than remember, the menu lists every command, lets you
+fill in any of its options, and runs the result. Nothing in it is a separate
+feature: each entry runs the ordinary command, and the exact command line is shown
+as you build it, so the menu is also a quick way of learning the CLI.
+
+```
+scan
+Scan the network once and record what is there.
+
+  --subnet, -s    192.168.1.0/24
+  --timeout       not set
+> --workers       32
+  --no-dns        off
+  --no-store      off
+  --json          off
+  --fail-on-new   off
+
+  Run             run it with the values above
+  Show help       what the command prints for --help
+  Back
+
+Parallel probes.
+Accepts: a whole number
+
+discoverynow scan --subnet 192.168.1.0/24 --workers 32
+```
+
+| Key | What it does |
+| --- | --- |
+| Up / Down (or `k` / `j`) | Move the cursor |
+| Enter | Open a command or group, edit the option under the cursor, or press a button |
+| Backspace / Delete | Clear the value of the option under the cursor |
+| Esc or Left | Go back one screen. On the first screen, leave the menu |
+| `q` | Leave the menu from anywhere |
+| Ctrl+C | Leave the menu, or stop a running command such as `watch` |
+
+How the options behave:
+
+- **On/off options** (`--json`, `--force`) flip each time you press Enter.
+- **Either-way options** (`--online` / `--offline`) cycle through *not set*, the first
+  and the second.
+- **Options with a fixed list of values** (`--format`) open a small list to pick from.
+- **Everything else** asks you to type the value. Numbers are checked as you type
+  them, and an empty answer clears the option.
+- **Options you can repeat** (`--subnet`) ask for one value per line; an empty line
+  ends the list.
+- Options marked `*` are required: *Run* will not start until they are filled in.
+- **Global options** at the bottom of the first screen (the `--config` file) are added
+  to every command you run from the menu.
+- A command remembers what you set while the menu is open, so you can run it again
+  with a small change.
+
+After a command runs, its output stays on screen until you press a key, so there is
+time to read it. *Show help* on any command prints what `--help` would.
+
+The menu needs a real, interactive terminal. If the output is piped or redirected it
+says so and stops; the ordinary commands work everywhere.
+
+The menu reads its commands and options from the command line itself instead of
+describing them a second time, so anything added to the CLI appears in the menu
+without further work.
+
 ## Exporting the device list
 
 ```bash
@@ -158,6 +229,7 @@ defused with a leading apostrophe.
 | `interfaces` | The local interfaces and what would be scanned |
 | `events` | Recent history across all devices |
 | `export` | Write the device list to a CSV or JSON file |
+| `menu` | An interactive menu over every command and option |
 | `devices list` | The inventory, with `--online`, `--new`, `--unapproved` |
 | `devices show` | Everything known about one device, with its history |
 | `devices rename` / `note` / `approve` / `forget` | Annotate the inventory |

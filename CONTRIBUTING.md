@@ -33,6 +33,18 @@ CI runs the same four on Linux and Windows, for Python 3.11, 3.12 and 3.13.
   rather than on column positions or words.
 - **Comments** explain why, not what. A comment that restates the code is noise.
 
+## Adding a command or an option
+
+The interactive menu (`discoverynow menu`) is built from the command line's own
+definitions, so a new command or option appears in it automatically. Describe each
+option properly where it is declared: its help text is what the menu shows under
+the cursor, and its Python type decides how the menu asks for it (a choice list for
+an `Enum`, a number check for `int` and `float`, a toggle for `bool | None`).
+
+`tests/test_menu.py` checks that every command and option of the CLI is reachable
+from the menu, and pins how a few of them are understood. If a dependency update
+changes how the parser reports types, that is where it will show.
+
 ## What belongs here, and what does not
 
 Discovery Now discovers and inventories. Features that authenticate to devices,
