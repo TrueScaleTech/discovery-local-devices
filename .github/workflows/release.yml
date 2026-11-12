@@ -1,0 +1,83 @@
+name: Release
+
+# Tag a commit to publish a release:
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# The workflow builds the Windows app, zips it, builds the installer, and
+# attaches both to a draft release. The draft is published by hand, after the
+# files have been tried.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and attach the files to"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows build
+    runs-on: windows-latest
+    permissions:
+      # Only this job writes, and only to create the draft release.
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the app and the installer
+        shell: pwsh
+        run: .\packaging\build-windows.ps1 -OutDir "${{ runner.temp }}\build"
+
+      - name: Check the build runs
+        shell: pwsh
+        env:
+          # Never touch the runner's own inventory, and never show a window.
+          DISCOVERY_NOW_DATA_DIR: ${{ runner.temp }}\smoke\data
+          DISCOVERY_NOW_CONFIG_DIR: ${{ runner.temp }}\smoke\config
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = "${{ runner.temp }}\build\DiscoveryNow\DiscoveryNow.exe"
+          $app = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 25
+          if ($app.HasExited) { throw "the app exited on its own with $($app.ExitCode)" }
+          Stop-Process -Id $app.Id -Force
+          if (-not (Test-Path "${{ runner.temp }}\smoke\data\inventory.db")) {
+            throw "the app started but wrote no inventory"
+          }
+          Write-Host "The packaged app starts and scans."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            ${{ runner.temp }}\build\*.zip
+            ${{ runner.temp }}\build\*setup.exe
+          if-no-files-found: error
+
+      - name: Draft the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ inputs.tag }}"
+          if (-not $tag) { $tag = "${{ github.ref_name }}" }
+          $files = Get-ChildItem "${{ runner.temp }}\build" -Include *.zip, *setup.exe -File
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --draft --title "Discovery Now $tag" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "could not create the release" }
+          }
+          gh release upload $tag @($files.FullName) --clobber
+          if ($LASTEXITCODE -ne 0) { throw "could not attach the files" }
