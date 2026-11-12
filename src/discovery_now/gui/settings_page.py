@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import APP_NAME, __version__
-from ..config import Settings, config_dir, config_path, data_dir
+from ..config import Settings, config_path, data_dir
 from ..net import TargetError, parse_network
 from . import theme
 from .prefs import INTERVALS, Preferences
@@ -151,7 +151,8 @@ class SettingsPage(QScrollArea):
 
         self._mode = Segmented()
         for mode in theme.Mode:
-            self._mode.add(mode.value, mode.label, lambda m=mode: self._set_mode(m))
+            self._mode.add(mode.value, mode.label)
+        self._mode.picked.connect(lambda key: self._set_mode(theme.Mode(key)))
         card.add_row("Theme", self._mode)
 
         swatches = QWidget()
@@ -169,7 +170,8 @@ class SettingsPage(QScrollArea):
 
         self._density = Segmented()
         for density in theme.Density:
-            self._density.add(density.value, density.label, lambda d=density: self._set_density(d))
+            self._density.add(density.value, density.label)
+        self._density.picked.connect(lambda key: self._set_density(theme.Density(key)))
         card.add_row("Density", self._density, "How much room the lists and panels take.")
         return card
 
@@ -369,7 +371,13 @@ class SettingsPage(QScrollArea):
         self._settings.save()
         self.scan_changed.emit()
 
-    def refresh_paths(self) -> None:
-        """Called after the appearance changes, so the cards redraw their icons."""
-        _ = config_dir()
+    def restyle(self) -> None:
+        """Take the spacing of the density now in use, and redraw."""
+        tokens = theme.current()
+        body = self.widget()
+        layout = body.layout() if body is not None else None
+        if layout is not None:
+            layout.setSpacing(tokens.gap + 2)
+        for card in self.findChildren(Card):
+            card.restyle()
         self.update()

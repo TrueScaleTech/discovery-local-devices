@@ -13,6 +13,7 @@ from PySide6.QtGui import (
     QGuiApplication,
     QKeyEvent,
     QKeySequence,
+    QPixmap,
     QShortcut,
 )
 from PySide6.QtWidgets import (
@@ -47,7 +48,7 @@ from ..store import Store
 from . import icons, theme
 from . import models as m
 from .detail import DetailPanel
-from .icons import app_icon
+from .icons import app_icon, app_image
 from .models import CellDelegate, DevicesModel, DevicesProxy, EventsModel
 from .prefs import Preferences, snap_interval
 from .settings_page import SettingsPage, interval_label
@@ -192,7 +193,10 @@ class MainWindow(QMainWindow):
         brand = QHBoxLayout()
         brand.setSpacing(9)
         mark = QLabel()
-        mark.setPixmap(app_icon().pixmap(26, 26))
+        # Drawn at twice the size and shown at half, so it is sharp on any screen.
+        logo = QPixmap.fromImage(app_image(56))
+        logo.setDevicePixelRatio(2.0)
+        mark.setPixmap(logo)
         name = QLabel(APP_NAME)
         name.setObjectName("brand")
         brand.addWidget(mark)
@@ -209,8 +213,11 @@ class MainWindow(QMainWindow):
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.clicked.connect(lambda _c=False, s=screen: self.show_screen(s))
             group.addButton(button, int(screen))
-            column.addWidget(button)
             self._nav[screen] = button
+            # Settings is not a place you work in, so it sits at the foot of the
+            # rail, under the main action, rather than among the screens.
+            if screen is not Screen.SETTINGS:
+                column.addWidget(button)
         column.addStretch(1)
 
         self._scan_button = QPushButton("Scan now")
@@ -224,6 +231,8 @@ class MainWindow(QMainWindow):
         self._schedule_note.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self._schedule_note.setWordWrap(True)
         column.addWidget(self._schedule_note)
+        column.addSpacing(6)
+        column.addWidget(self._nav[Screen.SETTINGS])
         return rail
 
     def _page_header(self, screen: Screen) -> tuple[QWidget, QHBoxLayout]:
@@ -433,6 +442,8 @@ class MainWindow(QMainWindow):
         self.topology_page = TopologyPage()
         self.topology_page.approve.connect(self._on_approval)
         self.topology_page.open_device.connect(self._open_in_devices)
+        self.topology_page.canvas.set_placed(self._prefs.node_positions())
+        self.topology_page.placed_changed.connect(self._prefs.save_node_positions)
         column.addWidget(self.topology_page, 1)
         return page
 
@@ -907,10 +918,11 @@ class MainWindow(QMainWindow):
             in_use = theme.current()
             wanted = (
                 theme.resolve_dark(app, self._prefs.mode),
+                self._prefs.mode is theme.Mode.BLACK,
                 accent.key,
                 self._prefs.density,
             )
-            if (in_use.dark, in_use.accent_key, in_use.density) != wanted:
+            if (in_use.dark, in_use.black, in_use.accent_key, in_use.density) != wanted:
                 theme.apply(app, mode=self._prefs.mode, accent=accent, density=self._prefs.density)
                 icons.forget_cached_icons()
         tokens = theme.current()
@@ -921,6 +933,7 @@ class MainWindow(QMainWindow):
         self._activity.verticalHeader().setDefaultSectionSize(tokens.row_height - 6)
         self._content.setContentsMargins(tokens.pad + 4, tokens.pad, tokens.pad + 4, tokens.gap)
         self.topology_page.restyle()
+        self.settings_page.restyle()
         self._model.refresh()
         self._events.layoutChanged.emit()
         self._show_selected()

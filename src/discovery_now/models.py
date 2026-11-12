@@ -83,7 +83,13 @@ class Device:
         return self.label or self.hostname or self.vendor or self.ip
 
     def is_new(self, window: timedelta, *, now: datetime | None = None) -> bool:
-        """True while the device is still within its "recently appeared" window."""
+        """True while the device appeared recently and nobody has vetted it yet.
+
+        "New" is a flag asking for a decision, so it ends when the decision is
+        made: approving a device takes the tag off, even inside the window.
+        """
+        if self.approved:
+            return False
         return (now or utcnow()) - self.first_seen <= window
 
     def age(self, *, now: datetime | None = None) -> timedelta:

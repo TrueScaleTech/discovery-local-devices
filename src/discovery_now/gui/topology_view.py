@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import timedelta
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
@@ -50,6 +51,10 @@ class Canvas(QWidget):
     selected = Signal(object)
     #: A node was double-clicked.
     opened = Signal(int)
+    #: A node was let go somewhere new: every moved node's position, by device id.
+    # Signal(object), not dict: a dict goes through Qt's string-keyed map, which
+    # cannot hold device ids, and the positions would silently never arrive.
+    moved = Signal(object)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -60,6 +65,12 @@ class Canvas(QWidget):
         self._selected_id: int | None = None
         self._drag_from: QPointF | None = None
         self._dragged = False
+        #: The node being dragged, and how far the grab was from its centre.
+        self._drag_node: int | None = None
+        self._grab = QPointF(0, 0)
+        #: Where the user has put nodes, in map units. Anything not listed here
+        #: stays where the automatic layout put it.
+        self._placed: dict[int, tuple[float, float]] = {}
         self.setMouseTracking(True)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.setMinimumHeight(320)
@@ -67,10 +78,37 @@ class Canvas(QWidget):
     # -- content -----------------------------------------------------------
 
     def set_map(self, value: Map, *, keep_view: bool = True) -> None:
-        self._map = value
+        self._map = self._with_placed(value)
         if not keep_view:
             self.fit()
         self.update()
+
+    def _with_placed(self, value: Map) -> Map:
+        """The map with every node the user has moved put back where they left it."""
+        if not self._placed:
+            return value
+        nodes = tuple(
+            replace(node, x=self._placed[node.device_id][0], y=self._placed[node.device_id][1])
+            if node.device_id in self._placed
+            else node
+            for node in value.nodes
+        )
+        return Map(nodes=nodes, edges=value.edges, gateway=value.gateway)
+
+    def set_placed(self, positions: dict[int, tuple[float, float]]) -> None:
+        """Restore positions the user chose earlier."""
+        self._placed = dict(positions)
+        self._map = self._with_placed(self._map)
+        self.update()
+
+    def reset_placed(self) -> None:
+        """Forget every position the user chose; the automatic layout returns."""
+        self._placed = {}
+        self.moved.emit({})
+
+    @property
+    def placed(self) -> dict[int, tuple[float, float]]:
+        return dict(self._placed)
 
     @property
     def node_count(self) -> int:
@@ -215,20 +253,50 @@ class Canvas(QWidget):
     # -- mouse -------------------------------------------------------------
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt's name
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_from = QPointF(event.position())
-            self._dragged = False
-            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+        point = QPointF(event.position())
+        self._drag_from = point
+        self._dragged = False
+        self._drag_node = self._at(point)
+        if self._drag_node is not None:
+            # Remember where inside the node it was grabbed, so it does not jump
+            # to centre itself under the pointer.
+            node = self._map.nodes[self._drag_node]
+            self._grab = QPointF(node.x, node.y) - self._to_map(point)
+        self.setCursor(Qt.CursorShape.ClosedHandCursor)
+
+    def _to_map(self, point: QPointF) -> QPointF:
+        """A point on screen, in the map's own units."""
+        centre = self._centre()
+        return QPointF(
+            (point.x() - centre.x()) / self._scale, (point.y() - centre.y()) / self._scale
+        )
+
+    def _place(self, index: int, x: float, y: float) -> None:
+        """Put one node somewhere, and remember that the user did."""
+        node = self._map.nodes[index]
+        if node.device_id is None:
+            return
+        self._placed[node.device_id] = (x, y)
+        nodes = list(self._map.nodes)
+        nodes[index] = replace(node, x=x, y=y)
+        self._map = Map(nodes=tuple(nodes), edges=self._map.edges, gateway=self._map.gateway)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt's name
         point = QPointF(event.position())
         if self._drag_from is not None:
             shift = point - self._drag_from
-            if abs(shift.x()) + abs(shift.y()) > 3:
-                self._dragged = True
+            if not self._dragged and abs(shift.x()) + abs(shift.y()) <= 3:
+                return
+            self._dragged = True
+            if self._drag_node is not None:
+                target = self._to_map(point) + self._grab
+                self._place(self._drag_node, target.x(), target.y())
+            else:
                 self._pan += shift
                 self._drag_from = point
-                self.update()
+            self.update()
             return
         found = self._at(point)
         if found != self._hover:
@@ -241,10 +309,16 @@ class Canvas(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt's name
         was_dragging = self._dragged
+        moved_node = self._drag_node is not None
         self._drag_from = None
+        self._drag_node = None
         self._dragged = False
         self.setCursor(Qt.CursorShape.OpenHandCursor)
-        if was_dragging or event.button() != Qt.MouseButton.LeftButton:
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+        if was_dragging:
+            if moved_node:
+                self.moved.emit(self.placed)
             return
         found = self._at(QPointF(event.position()))
         node = self._map.nodes[found] if found is not None else None
@@ -354,11 +428,15 @@ class TopologyPage(QWidget):
 
     approve = Signal(int, bool)
     open_device = Signal(int)
+    #: Where the user has put nodes changed: the positions, by device id.
+    placed_changed = Signal(object)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._devices: list[Device] = []
         self._new_within = timedelta(days=7)
+        self._gateways: Sequence[str] = ()
+        self._local_ips: Sequence[str] = ()
 
         self.canvas = Canvas(self)
         self.empty = QLabel(
@@ -394,8 +472,15 @@ class TopologyPage(QWidget):
             row.addWidget(button)
         self._control_buttons = self.controls.findChildren(QPushButton)
 
+        self.reset_button = QPushButton("Reset layout")
+        self.reset_button.setObjectName("quiet")
+        self.reset_button.setToolTip("Put every circle back where the map placed it")
+        self.reset_button.clicked.connect(self.reset_layout)
+        row.addWidget(self.reset_button)
+
         self.canvas.selected.connect(self._on_selected)
         self.canvas.opened.connect(self.open_device)
+        self.canvas.moved.connect(self.placed_changed)
         self.restyle()
 
     # -- content -----------------------------------------------------------
@@ -412,6 +497,8 @@ class TopologyPage(QWidget):
         first = not self._devices
         self._devices = list(devices)
         self._new_within = new_within
+        self._gateways = gateways
+        self._local_ips = local_ips
         drawn = plan(
             self._devices,
             new_within=new_within,
@@ -422,6 +509,19 @@ class TopologyPage(QWidget):
         self.empty.setVisible(not self._devices)
         self.canvas.setVisible(bool(self._devices))
         self._refresh_card()
+
+    def reset_layout(self) -> None:
+        """Forget where the user put things, and let the map place them again."""
+        self.canvas.reset_placed()
+        self.canvas.set_map(
+            plan(
+                self._devices,
+                new_within=self._new_within,
+                local_ips=self._local_ips,
+                gateways=self._gateways,
+            ),
+            keep_view=False,
+        )
 
     def select_device(self, device_id: int | None) -> None:
         self.canvas.select_device(device_id)

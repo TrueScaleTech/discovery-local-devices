@@ -178,7 +178,8 @@ down the left:
 Every device in a table you can sort by any column, filter with the buttons above
 it (All, Online, Offline, New, Not approved, each carrying its count) and search
 by name, address, MAC, vendor, guessed kind or notes. A device that has just
-appeared wears a `NEW` tag until the new-device window passes.
+appeared wears a `NEW` tag until it is approved or the new-device window passes,
+whichever comes first.
 
 Select a row to see everything known about that device on the right, and to give
 it a name, write a note, approve it or forget it. Right-click a row to copy its
@@ -196,7 +197,9 @@ grouped so that devices of the same kind sit together. Each node carries its
 kind, whether it is online, whether it is new, and an amber dot while it is not
 approved.
 
-Drag to move, scroll to zoom, double-click the background to fit everything.
+Drag the background to move around, scroll to zoom, double-click the background
+to fit everything. Drag a circle to put it where you want it: the position is
+remembered between runs, and *Reset layout* gives the map's own placement back.
 Click a node to see what it is and approve it from there; double-click it to open
 it in the Devices list.
 
@@ -213,8 +216,9 @@ offline, back online, changed address, opened or closed ports.
 
 ### Settings
 
-- **Appearance.** Follow the system, or pin light or dark. Six accents. Two
-  densities, comfortable and compact. A change applies at once.
+- **Appearance.** Follow the system, or pin light, dark or black (true black for
+  OLED screens). Six accents. Two densities, comfortable and compact. A change
+  applies at once.
 - **Scanning.** Scan on its own, from every minute to every hour. Which networks
   to scan, whether to look up names, how many missed scans mean a device is
   offline, how long the `NEW` tag lasts. These are kept in `config.toml`, the

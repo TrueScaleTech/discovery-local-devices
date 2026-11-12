@@ -10,6 +10,7 @@ belongs in ``config.toml``, which the command line reads too.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from PySide6.QtCore import QByteArray, QSettings
@@ -122,6 +123,29 @@ class Preferences:
 
     def save_hidden_columns(self, columns: set[int]) -> None:
         self._settings.setValue("hidden_columns", ",".join(str(c) for c in sorted(columns)))
+
+    def node_positions(self) -> dict[int, tuple[float, float]]:
+        """Where the user has dragged map nodes to, by device id."""
+        raw = self._settings.value("map_positions")
+        if not isinstance(raw, str):
+            return {}
+        try:
+            loaded = json.loads(raw)
+        except ValueError:
+            return {}
+        found: dict[int, tuple[float, float]] = {}
+        if not isinstance(loaded, dict):
+            return found
+        for key, value in loaded.items():
+            try:
+                found[int(key)] = (float(value[0]), float(value[1]))
+            except (ValueError, TypeError, IndexError):
+                continue
+        return found
+
+    def save_node_positions(self, positions: dict[int, tuple[float, float]]) -> None:
+        text = json.dumps({str(k): [round(x, 1), round(y, 1)] for k, (x, y) in positions.items()})
+        self._settings.setValue("map_positions", text)
 
     def geometry(self) -> QByteArray | None:
         value = self._settings.value("geometry")

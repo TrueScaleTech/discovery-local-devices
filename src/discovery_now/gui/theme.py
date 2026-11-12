@@ -60,10 +60,17 @@ class Mode(StrEnum):
     SYSTEM = "system"
     LIGHT = "light"
     DARK = "dark"
+    #: Dark with a true black background, which an OLED screen switches off.
+    BLACK = "black"
 
     @property
     def label(self) -> str:
-        return {Mode.SYSTEM: "Follow the system", Mode.LIGHT: "Light", Mode.DARK: "Dark"}[self]
+        return {
+            Mode.SYSTEM: "Follow the system",
+            Mode.LIGHT: "Light",
+            Mode.DARK: "Dark",
+            Mode.BLACK: "Black",
+        }[self]
 
 
 class Density(StrEnum):
@@ -124,10 +131,13 @@ class Tokens:
     """Every colour and measurement the app draws with."""
 
     dark: bool
+    #: True black rather than dark grey: the dark appearance, with the grey taken out.
+    black: bool
     accent_key: str
     density: Density
 
     # Surfaces, from the furthest back to the nearest.
+    rail: str
     window: str
     surface: str
     raised: str
@@ -201,9 +211,30 @@ _DARK_NEUTRALS = {
     "shadow": "#000000",
 }
 
+#: Pure black for the window, so an OLED screen leaves those pixels off. The
+#: cards sit a hair above it and the borders do the separating, because a card
+#: that is the same black as the page would simply disappear.
+_BLACK_NEUTRALS = {
+    "rail": "#000000",
+    "window": "#000000",
+    "surface": "#0b0b0c",
+    "raised": "#161617",
+    "sunken": "#000000",
+    "border": "#252528",
+    "border_strong": "#3c3c42",
+    "text": "#ececf0",
+    "muted": "#9c9ca5",
+    "faint": "#80808a",
+    "online": "#4fd390",
+    "offline": "#ff8f86",
+    "new": "#bfa3ff",
+    "warn": "#f0b757",
+    "shadow": "#000000",
+}
+
 _METRICS = {
-    Density.COMFORTABLE: {"row_height": 42, "gap": 12, "pad": 16, "radius": 8, "font_pt": 10.0},
-    Density.COMPACT: {"row_height": 32, "gap": 8, "pad": 11, "radius": 6, "font_pt": 9.5},
+    Density.COMFORTABLE: {"row_height": 44, "gap": 14, "pad": 18, "radius": 8, "font_pt": 10.5},
+    Density.COMPACT: {"row_height": 30, "gap": 7, "pad": 10, "radius": 6, "font_pt": 9.0},
 }
 
 
@@ -212,9 +243,17 @@ def tokens_for(
     dark: bool,
     accent: Accent = DEFAULT_ACCENT,
     density: Density = Density.COMFORTABLE,
+    black: bool = False,
 ) -> Tokens:
-    """Build the whole palette from the three choices the user makes."""
-    base = dict(_DARK_NEUTRALS if dark else _LIGHT_NEUTRALS)
+    """Build the whole palette from the choices the user makes.
+
+    ``black`` only means something on a dark appearance, and is ignored on a light
+    one.
+    """
+    black = black and dark
+    base = dict(_BLACK_NEUTRALS if black else _DARK_NEUTRALS if dark else _LIGHT_NEUTRALS)
+    # The side rail is one step above the page, except on black, where it is black.
+    base.setdefault("rail", str(base["raised"]))
     fill = accent.fill(dark=dark)
     surface = str(base["surface"])
     # Hover and pressed move towards the text colour, so they stay visible in both
@@ -223,6 +262,7 @@ def tokens_for(
     metrics = _METRICS[density]
     return Tokens(
         dark=dark,
+        black=black,
         accent_key=accent.key,
         density=density,
         accent=fill,
@@ -252,10 +292,10 @@ def system_is_dark(app: QApplication) -> bool:
 
 
 def resolve_dark(app: QApplication, mode: Mode) -> bool:
-    """Whether to draw the dark appearance, given the user's choice."""
+    """Whether to draw a dark appearance, given the user's choice."""
     if mode is Mode.LIGHT:
         return False
-    if mode is Mode.DARK:
+    if mode in (Mode.DARK, Mode.BLACK):
         return True
     return system_is_dark(app)
 
@@ -387,7 +427,7 @@ QPushButton#nav {{
 QPushButton#nav:hover {{ background: {t.hover}; color: {t.text}; }}
 QPushButton#nav:checked {{ background: {t.accent_soft}; color: {t.text}; }}
 
-QFrame#rail {{ background: {t.raised}; border: none; border-right: 1px solid {t.border}; }}
+QFrame#rail {{ background: {t.rail}; border: none; border-right: 1px solid {t.border}; }}
 QFrame#panel {{
     background: {t.surface}; border: 1px solid {t.border}; border-radius: {t.radius}px;
 }}
@@ -487,7 +527,12 @@ def apply(
     """Style the whole application, and return the tokens it now uses."""
     # One appearance at a time, read from everywhere.
     global _current
-    _current = tokens_for(dark=resolve_dark(app, mode), accent=accent, density=density)
+    _current = tokens_for(
+        dark=resolve_dark(app, mode),
+        accent=accent,
+        density=density,
+        black=mode is Mode.BLACK,
+    )
     app.setStyle("Fusion")
     app.setPalette(_palette(_current))
     app.setStyleSheet(stylesheet(_current))

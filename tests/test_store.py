@@ -181,7 +181,37 @@ class TestSummary:
         store.record_scan([seen("192.168.1.10", "aa:bb:cc:dd:ee:01")], offline_after=1)
 
         counts = store.summary(new_within=WEEK)
-        assert counts == {"total": 2, "online": 1, "offline": 1, "new": 2, "unapproved": 1}
+        # Two arrived this week, but one has been approved, so only one is "new".
+        assert counts == {"total": 2, "online": 1, "offline": 1, "new": 1, "unapproved": 1}
+
+
+class TestNewMeansUnvetted:
+    def test_approving_a_device_takes_the_new_tag_off(self, store: Store) -> None:
+        store.record_scan([seen("192.168.1.10", "aa:bb:cc:dd:ee:01")])
+        device = store.devices()[0]
+        assert device.is_new(WEEK)
+        store.set_approved(device.id, True)
+        approved = store.get(device.id)
+        assert approved is not None
+        assert not approved.is_new(WEEK)
+
+    def test_withdrawing_approval_brings_it_back_while_still_recent(self, store: Store) -> None:
+        store.record_scan([seen("192.168.1.10", "aa:bb:cc:dd:ee:01")])
+        device = store.devices()[0]
+        store.set_approved(device.id, True)
+        store.set_approved(device.id, False)
+        again = store.get(device.id)
+        assert again is not None
+        assert again.is_new(WEEK)
+
+    def test_the_new_filter_leaves_out_approved_devices(self, store: Store) -> None:
+        store.record_scan(
+            [seen("192.168.1.10", "aa:bb:cc:dd:ee:01"), seen("192.168.1.11", "aa:bb:cc:dd:ee:02")]
+        )
+        first = store.devices()[0]
+        store.set_approved(first.id, True)
+        listed = store.devices(new_within=WEEK)
+        assert [device.ip for device in listed] == ["192.168.1.11"]
 
 
 class TestFiltering:

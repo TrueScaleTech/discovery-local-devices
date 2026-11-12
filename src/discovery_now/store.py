@@ -158,7 +158,8 @@ class Store:
             clauses.append("approved = ?")
             params.append(int(approved))
         if new_within is not None:
-            clauses.append("first_seen >= ?")
+            # Same meaning as Device.is_new: recent, and not yet approved.
+            clauses.append("first_seen >= ? AND approved = 0")
             params.append(_iso((now or utcnow()) - new_within))
         # Every clause is a literal written above; the values travel as bound
         # parameters, so nothing from outside this method reaches the SQL text.
@@ -232,7 +233,7 @@ class Store:
             "SELECT COUNT(*), COALESCE(SUM(online), 0), COALESCE(SUM(1 - approved), 0) FROM devices"
         ).fetchone()
         fresh = self._db.execute(
-            "SELECT COUNT(*) FROM devices WHERE first_seen >= ?",
+            "SELECT COUNT(*) FROM devices WHERE first_seen >= ? AND approved = 0",
             (_iso(moment - new_within),),
         ).fetchone()[0]
         return {

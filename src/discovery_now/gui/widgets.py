@@ -6,9 +6,7 @@ looks the same wherever it turns up.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QRectF, Qt, Signal
 from PySide6.QtGui import QPainter, QPaintEvent
 from PySide6.QtWidgets import (
     QFrame,
@@ -85,6 +83,7 @@ class Card(QFrame):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(tokens.pad, tokens.pad, tokens.pad, tokens.pad)
         outer.setSpacing(tokens.gap)
+        self._outer = outer
 
         top = QHBoxLayout()
         top.setSpacing(9)
@@ -100,6 +99,13 @@ class Card(QFrame):
         self._body.setSpacing(tokens.gap)
         outer.addLayout(self._body)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
+
+    def restyle(self) -> None:
+        """Take the spacing of the density now in use."""
+        tokens = theme.current()
+        self._outer.setContentsMargins(tokens.pad, tokens.pad, tokens.pad, tokens.pad)
+        self._outer.setSpacing(tokens.gap)
+        self._body.setSpacing(tokens.gap)
 
     def add(self, widget: QWidget) -> None:
         self._body.addWidget(widget)
@@ -146,8 +152,15 @@ class Segmented(QWidget):
     """A row of chips where exactly one is chosen.
 
     Used where a dropdown would hide two or three short choices that are worth
-    seeing side by side.
+    seeing side by side. It reports the choice as a key through ``picked``, so a
+    caller never has to bind a value into a callback.
+
+    That matters: Qt's ``clicked`` signal passes whether the button is checked,
+    and a lambda with a default argument receives that in place of its default.
+    Binding the value in the caller silently handed ``False`` to the handler.
     """
+
+    picked = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -157,15 +170,18 @@ class Segmented(QWidget):
         self._row.addStretch(1)
         self._buttons: dict[str, QPushButton] = {}
 
-    def add(self, key: str, label: str, on_chosen: Callable[..., object]) -> QPushButton:
+    def add(self, key: str, label: str) -> QPushButton:
         button = QPushButton(label)
         button.setObjectName("chip")
         button.setCheckable(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.clicked.connect(on_chosen)
+        button.clicked.connect(lambda _checked=False, k=key: self.picked.emit(k))
         self._row.insertWidget(self._row.count() - 1, button)
         self._buttons[key] = button
         return button
+
+    def button(self, key: str) -> QPushButton:
+        return self._buttons[key]
 
     def choose(self, key: str) -> None:
         for name, button in self._buttons.items():

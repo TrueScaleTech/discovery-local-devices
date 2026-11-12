@@ -4,11 +4,12 @@ Nothing here is a picture file or a character borrowed from a font: every mark i
 a path on a 24-unit grid with one stroke weight, so the set stays consistent at
 any size and takes whatever colour it is given.
 
-The app icon is the wordmark: NOW bent over the dot, the two close together.
+The app icon is the wordmark: NOW bent round the dot, the two close together.
 """
 
 from __future__ import annotations
 
+import math
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -55,12 +56,26 @@ def _letter(points: Points, width: float, height: float) -> QPainterPath:
 
 
 def _draw_wordmark(painter: QPainter, size: float) -> None:
-    """NOW on an arc, curving over the dot just below it."""
-    centre = QPointF(size * 0.5, size * 0.632)
-    radius = size * 0.272
-    height = size * 0.125
-    width = size * 0.095
-    stroke = max(1.0, size * 0.038)
+    """NOW on an arc, curving over the dot just below it, at any size.
+
+    The word is the same at every size; what changes is how much room it is given.
+    Letters have a floor (a letter smaller than about four pixels stops being a
+    letter), and the whole group is centred as one, so a 16 pixel icon is still
+    the word and not a different picture.
+    """
+    height = max(size * 0.19, 4.4)
+    width = height * 0.78
+    stroke = max(1.35, size * 0.05)
+    # Wrapped round the dot as far as the size allows: at the smallest sizes the
+    # letters need to stand more upright to stay letters.
+    angle = 38.0 if size >= 40 else 33.0
+    # Far enough round the arc that neighbouring letters do not touch.
+    radius = width * 1.3 / math.sin(math.radians(angle))
+    dot = max(1.6, size * 0.1)
+
+    # Centre the letters and the dot together, not the arc's own centre.
+    whole = radius + height / 2 + dot
+    centre = QPointF(size * 0.5, size * 0.5 - whole / 2 + radius + height / 2)
 
     pen = QPen(QColor("#ffffff"))
     pen.setWidthF(stroke)
@@ -69,13 +84,13 @@ def _draw_wordmark(painter: QPainter, size: float) -> None:
     painter.setPen(pen)
     painter.setBrush(Qt.BrushStyle.NoBrush)
 
-    for angle, shape in ((-26.0, _N), (0.0, None), (26.0, _W)):
+    for turn, shape in ((-angle, _N), (0.0, None), (angle, _W)):
         painter.save()
         painter.translate(centre)
-        painter.rotate(angle)
+        painter.rotate(turn)
         painter.translate(0, -radius)
         if shape is None:
-            ring = height * 0.5 - stroke * 0.5
+            ring = max(0.9, height * 0.5 - stroke * 0.5)
             painter.drawEllipse(QPointF(0, 0), ring * 0.95, ring)
         else:
             painter.drawPath(_letter(shape, width, height))
@@ -83,26 +98,7 @@ def _draw_wordmark(painter: QPainter, size: float) -> None:
 
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QBrush(QColor("#ffffff")))
-    painter.drawEllipse(centre, size * 0.105, size * 0.105)
-
-
-def _draw_small_mark(painter: QPainter, size: float) -> None:
-    """Below the size where three letters would turn to mush: the dot and one arc."""
-    centre = QPointF(size * 0.5, size * 0.6)
-    pen = QPen(QColor("#ffffff"))
-    pen.setWidthF(max(1.0, size * 0.085))
-    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-    painter.setPen(pen)
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    radius = size * 0.26
-    painter.drawArc(
-        QRectF(centre.x() - radius, centre.y() - radius, radius * 2, radius * 2),
-        25 * 16,
-        130 * 16,
-    )
-    painter.setPen(Qt.PenStyle.NoPen)
-    painter.setBrush(QBrush(QColor("#ffffff")))
-    painter.drawEllipse(centre, size * 0.1, size * 0.1)
+    painter.drawEllipse(centre, dot, dot)
 
 
 def app_image(size: int) -> QImage:
@@ -118,10 +114,7 @@ def app_image(size: int) -> QImage:
     painter.setBrush(QBrush(QColor(BRAND)))
     painter.drawRoundedRect(tile, size * 0.22, size * 0.22)
 
-    if size >= 64:
-        _draw_wordmark(painter, size)
-    else:
-        _draw_small_mark(painter, size)
+    _draw_wordmark(painter, size)
     painter.end()
     return image
 
