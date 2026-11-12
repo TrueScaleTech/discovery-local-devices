@@ -40,6 +40,8 @@ dev = [
 ]
 
 [project.scripts]
+discoverynow = "discovery_now.cli:main"
+# The hyphenated spelling keeps working, so nothing already typed or scripted breaks.
 discovery-now = "discovery_now.cli:main"
 
 [project.urls]

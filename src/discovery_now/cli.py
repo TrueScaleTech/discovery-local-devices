@@ -1,4 +1,4 @@
-"""The ``discovery-now`` command line.
+"""The ``discoverynow`` command line.
 
 Every command that shows something can also print it as JSON, so the same tool
 serves a person reading a table and a script reading a pipe.
@@ -309,7 +309,7 @@ def events(
         _emit_json([event_as_dict(event) for event in history])
         return
     if not history:
-        console.print("Nothing recorded yet. Run `discovery-now scan` first.")
+        console.print("Nothing recorded yet. Run `discoverynow scan` first.")
         return
     console.print(events_table(history, names, title="Recent events"))
 
@@ -342,7 +342,7 @@ def devices_list(
         _emit_json([device_as_dict(device, new_within=window) for device in found])
         return
     if not found:
-        console.print("No devices match. Run `discovery-now scan` to populate the inventory.")
+        console.print("No devices match. Run `discoverynow scan` to populate the inventory.")
         return
     console.print(devices_table(found, new_within=window, title=f"{len(found)} device(s)"))
 
@@ -453,7 +453,7 @@ def oui_info() -> None:
     source = "IEEE registry" if oui.using_full_registry() else "built-in short list"
     console.print(f"{oui.table_size()} prefixes loaded from the {source}.")
     if not oui.using_full_registry():
-        console.print("[dim]Run `discovery-now oui update` for the full list.[/]")
+        console.print("[dim]Run `discoverynow oui update` for the full list.[/]")
 
 
 # -- configuration -----------------------------------------------------------
@@ -495,7 +495,7 @@ def config_show(ctx: typer.Context) -> None:
 
 
 def main() -> None:
-    """Entry point for the ``discovery-now`` command."""
+    """Entry point for the ``discoverynow`` command."""
     app()
 
 

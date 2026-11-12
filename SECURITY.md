@@ -42,5 +42,5 @@ It does not:
 
 The inventory holds MAC addresses, hostnames and IP addresses of devices on your
 network, which can identify people and their habits. It is stored only in a local
-SQLite file, whose location `discovery-now status` prints. Treat it as personal
+SQLite file, whose location `discoverynow status` prints. Treat it as personal
 data: do not commit it, and think before sharing an export.

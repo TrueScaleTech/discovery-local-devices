@@ -145,6 +145,6 @@ DEFAULT_CONFIG_TEMPLATE = """\
 # How many days a device keeps its "new" badge.
 # new_device_days = 7
 
-# Seconds between scans when running `discovery-now watch`.
+# Seconds between scans when running `discoverynow watch`.
 # watch_interval = 300
 """
