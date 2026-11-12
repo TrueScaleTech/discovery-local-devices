@@ -250,3 +250,20 @@ class TestCommand:
 
     def test_an_unknown_format_is_rejected(self) -> None:
         assert runner.invoke(app, ["export", "--format", "xml"]).exit_code != 0
+
+
+class TestWrite:
+    def test_a_csv_gets_a_byte_order_mark_so_excel_reads_accents(self, tmp_path: Path) -> None:
+        target = tmp_path / "a.csv"
+        exporting.write(target, "name\ncafé\n", exporting.ExportFormat.CSV)
+        assert target.read_bytes().startswith(b"\xef\xbb\xbf")
+
+    def test_json_has_none(self, tmp_path: Path) -> None:
+        target = tmp_path / "a.json"
+        exporting.write(target, "[]\n", exporting.ExportFormat.JSON)
+        assert not target.read_bytes().startswith(b"\xef\xbb\xbf")
+
+    def test_the_folder_is_created_when_missing(self, tmp_path: Path) -> None:
+        target = tmp_path / "deep" / "er" / "a.json"
+        exporting.write(target, "[]\n", exporting.ExportFormat.JSON)
+        assert target.is_file()

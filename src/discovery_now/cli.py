@@ -378,11 +378,7 @@ def export_devices(
         typer.echo(text, nl=False)
         return
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    # A byte-order mark makes Excel on Windows read accents correctly; JSON has none.
-    encoding = "utf-8-sig" if chosen is exporting.ExportFormat.CSV else "utf-8"
-    with output.open("w", encoding=encoding, newline="") as handle:
-        handle.write(text)
+    exporting.write(output, text, chosen)
     note = " Hostnames, labels, notes and MAC endings are hidden." if redact else ""
     console.print(f"Exported {len(found)} device(s) to {output}.{note}")
 

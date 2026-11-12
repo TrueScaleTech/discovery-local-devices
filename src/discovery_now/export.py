@@ -18,6 +18,7 @@ import json
 from collections.abc import Sequence
 from datetime import timedelta
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
 from .models import Device
@@ -138,3 +139,15 @@ def to_json(table: Sequence[dict[str, Any]]) -> str:
 def render(table: Sequence[dict[str, Any]], fmt: ExportFormat) -> str:
     """The rows in the requested format."""
     return to_csv(table) if fmt is ExportFormat.CSV else to_json(table)
+
+
+def write(path: Path, text: str, fmt: ExportFormat) -> None:
+    """Save rendered rows to a file, creating its folder if needed.
+
+    A byte-order mark makes Excel on Windows read accents correctly in a CSV; JSON
+    has none.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoding = "utf-8-sig" if fmt is ExportFormat.CSV else "utf-8"
+    with path.open("w", encoding=encoding, newline="") as handle:
+        handle.write(text)
