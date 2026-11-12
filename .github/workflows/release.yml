@@ -82,13 +82,20 @@ jobs:
           }
           Write-Host "Attaching: $($files.Name -join ', ')"
 
-          # A draft release carries no tag until it is published, so it cannot be
-          # looked up by one: make it with its files, and if it is already there,
-          # replace them instead.
+          # A draft carries no tag until it is published, so GitHub is happy to
+          # hold several drafts for the same tag and neither "view" nor "upload"
+          # can tell them apart. Clear any draft for this tag first, then make
+          # exactly one. Only drafts are touched: a published release is never
+          # one of these.
+          $stale = @(gh api "repos/${{ github.repository }}/releases" `
+            --jq ".[] | select(.draft and .tag_name == \"$tag\") | .id")
+          if ($LASTEXITCODE -ne 0) { throw "could not list the releases" }
+          foreach ($id in $stale) {
+            Write-Host "Removing an earlier draft for $tag ($id)."
+            gh api -X DELETE "repos/${{ github.repository }}/releases/$id"
+            if ($LASTEXITCODE -ne 0) { throw "could not remove draft $id" }
+          }
+
           gh release create $tag --draft --title "Discovery Now $tag" `
             --generate-notes @($files.FullName)
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "That release exists; replacing its files."
-            gh release upload $tag @($files.FullName) --clobber
-            if ($LASTEXITCODE -ne 0) { throw "could not attach the files" }
-          }
+          if ($LASTEXITCODE -ne 0) { throw "could not create the release" }
