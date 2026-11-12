@@ -699,8 +699,46 @@ class TestTheActivityLog:
 
 
 class TestAppearance:
-    def test_both_appearances_define_every_colour(self) -> None:
-        assert theme.LIGHT.__slots__ == theme.DARK.__slots__
+    def test_text_reads_on_every_surface(self) -> None:
+        # AA for body text, on each of the surfaces the app actually paints.
+        for dark in (False, True):
+            tokens = theme.tokens_for(dark=dark)
+            for surface in (tokens.window, tokens.surface, tokens.raised, tokens.sunken):
+                for colour in (tokens.text, tokens.muted):
+                    assert theme.contrast(colour, surface) >= 4.5, (dark, colour, surface)
+            # The faintest text is placeholder text, and that only ever sits in an
+            # input, which is drawn on the plain surface.
+            assert theme.contrast(tokens.faint, tokens.surface) >= 4.5, dark
+
+    def test_the_state_colours_read_on_the_surface(self) -> None:
+        for dark in (False, True):
+            tokens = theme.tokens_for(dark=dark)
+            for colour in (tokens.online, tokens.offline, tokens.new, tokens.warn):
+                assert theme.contrast(colour, tokens.surface) >= 4.5, (dark, colour)
+
+    def test_every_accent_reads_in_both_appearances(self) -> None:
+        for accent in theme.ACCENTS:
+            for dark in (False, True):
+                tokens = theme.tokens_for(dark=dark, accent=accent)
+                # The label on a primary button, and the button against the page.
+                assert theme.contrast(tokens.on_accent, tokens.accent) >= 4.5, accent.key
+                assert theme.contrast(tokens.accent, tokens.surface) >= 3.0, accent.key
+
+    def test_an_accent_nobody_offers_falls_back_to_the_default(self) -> None:
+        assert theme.accent_for("chartreuse") is theme.DEFAULT_ACCENT
+        assert theme.accent_for("violet").key == "violet"
+
+    def test_density_changes_the_measurements_not_the_colours(self) -> None:
+        roomy = theme.tokens_for(dark=False, density=theme.Density.COMFORTABLE)
+        tight = theme.tokens_for(dark=False, density=theme.Density.COMPACT)
+        assert tight.row_height < roomy.row_height
+        assert tight.pad < roomy.pad
+        assert tight.text == roomy.text
+
+    def test_a_pinned_appearance_beats_the_system(self, app: QApplication) -> None:
+        assert theme.resolve_dark(app, theme.Mode.DARK) is True
+        assert theme.resolve_dark(app, theme.Mode.LIGHT) is False
+        assert theme.resolve_dark(app, theme.Mode.SYSTEM) == theme.system_is_dark(app)
 
     def test_the_window_redraws_after_a_switch(
         self, app: QApplication, db: Path, make_window: Callable[..., MainWindow]
