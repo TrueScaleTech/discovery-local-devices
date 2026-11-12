@@ -220,6 +220,11 @@ class Store:
             for row in rows
         ]
 
+    def last_scan_at(self) -> datetime | None:
+        """When the most recent scan was recorded, or None before the first one."""
+        row = self._db.execute("SELECT MAX(started_at) FROM scans").fetchone()
+        return _parse(row[0]) if row and row[0] else None
+
     def summary(self, *, new_within: timedelta, now: datetime | None = None) -> dict[str, int]:
         """The counts a dashboard needs."""
         moment = now or utcnow()

@@ -221,3 +221,21 @@ class TestPersistence:
         store.close()
         with Store(path) as reopened:
             assert len(reopened.devices()) == 1
+
+
+class TestLastScan:
+    def test_none_before_the_first_scan(self, store: Store) -> None:
+        assert store.last_scan_at() is None
+
+    def test_the_most_recent_scan_wins(self, store: Store) -> None:
+        early = utcnow() - timedelta(hours=2)
+        late = utcnow() - timedelta(minutes=5)
+        store.record_scan_run(
+            networks=["192.168.1.0/24"], probed=254, found=3, duration=1, now=late
+        )
+        store.record_scan_run(
+            networks=["192.168.1.0/24"], probed=254, found=3, duration=1, now=early
+        )
+        stored = store.last_scan_at()
+        assert stored is not None
+        assert abs((stored - late).total_seconds()) < 1
