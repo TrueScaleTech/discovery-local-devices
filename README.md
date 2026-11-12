@@ -249,7 +249,7 @@ administrator rights, and it leaves the inventory and the settings alone when it
 uninstalls. Neither the installer nor the `.exe` is signed, so Windows SmartScreen
 will warn the first time one is run.
 
-Pushing a tag (`git tag v0.1.0 && git push origin v0.1.0`) builds all of this on
+Pushing a tag (`git tag v0.1.1 && git push origin v0.1.1`) builds all of this on
 a clean Windows machine, checks that the packaged app really starts and scans,
 and attaches the files to a draft release.
 

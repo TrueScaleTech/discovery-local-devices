@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "discovery-now"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Discover, inventory and monitor the devices on your own network."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -47,6 +47,9 @@ discoverynow = "discovery_now.cli:main"
 [project.urls]
 Homepage = "https://github.com/TrueScaleTech/discovery-local-devices"
 Issues = "https://github.com/TrueScaleTech/discovery-local-devices/issues"
+
+[tool.hatch.version]
+path = "src/discovery_now/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/discovery_now"]

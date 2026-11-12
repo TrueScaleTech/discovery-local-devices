@@ -25,8 +25,9 @@ Set-Location $repo
 python -m pip install --quiet -e ".[gui]" pyinstaller
 if ($LASTEXITCODE -ne 0) { throw "could not install the build requirements" }
 
-$version = (python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])").Trim()
-if ($LASTEXITCODE -ne 0 -or -not $version) { throw "could not read the version from pyproject.toml" }
+# From the package that was just installed, which is the number the app shows.
+$version = (python -c "import discovery_now; print(discovery_now.__version__)").Trim()
+if ($LASTEXITCODE -ne 0 -or -not $version) { throw "could not read the version from the package" }
 Write-Host "Building Discovery Now $version"
 
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir | Out-Null }
