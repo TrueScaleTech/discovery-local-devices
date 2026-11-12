@@ -166,43 +166,92 @@ approved stays flagged, so "I have never looked at this" never looks the same as
 discoverynow gui
 ```
 
-The window shows the same inventory as the command line, and both can be used
-side by side.
+Or install it without Python at all: every release carries a Windows installer
+and a zip, under [Releases](https://github.com/TrueScaleTech/discovery-local-devices/releases).
 
-- **Devices.** Every device in a table you can sort by any column, filter with the
-  buttons above it (All, Online, Offline, New, Not approved, each with its count)
-  and search by name, address, MAC, vendor, guessed kind or notes. New devices
-  wear a `NEW` tag until the new-device window passes (7 days by default).
-- **One device.** Select a row to see everything known about it. Give it a name,
-  write a note, approve it, or forget it. Right-click a row to copy its address or
-  MAC. Right-click a column header to show or hide columns (Ports and First seen
-  start hidden).
-- **Activity.** The history of everything that happened, newest first: devices
-  discovered, gone offline, back online, changed address, opened or closed ports.
-- **Keeping watch.** The app scans when it starts and then on its own, every 5
-  minutes by default (the choice is in the header). A desktop notification tells
-  you when a new device appears on a network it already knew. The very first scan
-  does not announce every device it finds.
-- **Export.** Save the inventory as CSV or JSON, optionally hiding private details.
+The window shows the same inventory as the command line, from the same database
+and the same settings file, so the two can be used side by side. Four screens,
+down the left:
 
-Shortcuts: `F5` scan now, `Ctrl+F` search, `Ctrl+1` / `Ctrl+2` switch between
-Devices and Activity. The window follows the system's light or dark appearance.
+### Devices
 
-What the window remembers (its size, the columns you hid, the scan interval, the
-notification switch) is kept in `gui.ini` next to the configuration file, not in
-the Windows registry.
+Every device in a table you can sort by any column, filter with the buttons above
+it (All, Online, Offline, New, Not approved, each carrying its count) and search
+by name, address, MAC, vendor, guessed kind or notes. A device that has just
+appeared wears a `NEW` tag until the new-device window passes.
 
-### A Windows build with no Python needed
+Select a row to see everything known about that device on the right, and to give
+it a name, write a note, approve it or forget it. Right-click a row to copy its
+address or MAC, or to find it on the map; right-click a column heading to choose
+which columns the table shows.
+
+Select several rows (ctrl-click, or shift-click for a run of them) and a bar
+appears above the table: approve them all at once, withdraw approval, or forget
+them together. This is the quick way to go through everything a first scan found.
+
+### Network Topology
+
+A map of the network: the router in the middle, everything else around it,
+grouped so that devices of the same kind sit together. Each node carries its
+kind, whether it is online, whether it is new, and an amber dot while it is not
+approved.
+
+Drag to move, scroll to zoom, double-click the background to fit everything.
+Click a node to see what it is and approve it from there; double-click it to open
+it in the Devices list.
+
+What the map claims is worth being clear about. Discovery Now never sees which
+switch port a device is plugged into, so it cannot draw the real wiring. What it
+can see is the gateway (from the system's own routing table, falling back to
+working it out from the devices themselves) and that a home network is normally
+one flat segment behind it. That is what the map shows.
+
+### Activity
+
+The history of everything that happened, newest first: devices discovered, gone
+offline, back online, changed address, opened or closed ports.
+
+### Settings
+
+- **Appearance.** Follow the system, or pin light or dark. Six accents. Two
+  densities, comfortable and compact. A change applies at once.
+- **Scanning.** Scan on its own, from every minute to every hour. Which networks
+  to scan, whether to look up names, how many missed scans mean a device is
+  offline, how long the `NEW` tag lasts. These are kept in `config.toml`, the
+  same file the command line reads, so changing one here changes it for both.
+- **Alerts and privacy.** Whether to be told about a new device, and whether
+  exports hide private details.
+- **Files.** Where the settings and the inventory live, with a button to open each.
+
+Shortcuts: `F5` scan now, `Ctrl+F` search, `Ctrl+1` to `Ctrl+3` for the first
+three screens, `Ctrl+,` for the settings.
+
+What the window remembers (its size, the columns you hid, the appearance, the
+scan interval) is kept in `gui.ini` next to the configuration file, not in the
+Windows registry.
+
+### Building it yourself
 
 ```powershell
 .\packaging\build-windows.ps1
 ```
 
-This produces `dist\DiscoveryNow\DiscoveryNow.exe` and a zip of the folder, built
-with PyInstaller. If the repository sits deep inside nested folders, pass a short
-output path (`-OutDir C:\dn-build`): Windows stops at 260 characters unless long
-paths are switched on. The `.exe` is not signed, so Windows SmartScreen will warn
-the first time it is run.
+This produces `dist\DiscoveryNow\DiscoveryNow.exe`, a zip of the folder, and,
+when [Inno Setup](https://jrsoftware.org/isdl.php) is installed, the installer
+too. Pass `-NoInstaller` to skip it.
+
+If the repository sits deep inside nested folders, pass a short output path
+(`-OutDir C:\dn-build`): Windows stops at 260 characters unless long paths are
+switched on.
+
+The installer puts the app in the current user's own folders, so it asks for no
+administrator rights, and it leaves the inventory and the settings alone when it
+uninstalls. Neither the installer nor the `.exe` is signed, so Windows SmartScreen
+will warn the first time one is run.
+
+Pushing a tag (`git tag v0.1.0 && git push origin v0.1.0`) builds all of this on
+a clean Windows machine, checks that the packaged app really starts and scans,
+and attaches the files to a draft release.
 
 ## The interactive menu
 
@@ -352,8 +401,8 @@ are refused unless you turn that off deliberately. See [SECURITY.md](SECURITY.md
 ## Roadmap
 
 - [x] Discovery engine, inventory, online/offline monitoring, CLI
-- [x] Desktop app, first version (Windows)
-- [ ] Desktop app: more polish, then Linux packaging
+- [x] Desktop app: devices, map, activity, settings, themes (Windows)
+- [ ] Desktop app: Linux packaging
 - [ ] Notifications: device offline, webhook, and richer desktop alerts
 - [ ] Security checks: MAC and IP changes, ARP anomalies, rogue DHCP, risky ports
 - [ ] Packaged builds and a tagged release

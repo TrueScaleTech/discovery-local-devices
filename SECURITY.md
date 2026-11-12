@@ -35,6 +35,10 @@ parser, with the same checks. The app runs the same scan engine and the same
 guards, on a background thread, and shows desktop notifications through the
 operating system. Neither sends anything off the machine.
 
+The network map reads one more thing from the operating system: its routing
+table, to find out which address is the default gateway (`ip route` on Linux,
+`route print` on Windows). It is read, never changed.
+
 ## Guards
 
 - Addresses outside private ranges are refused unless `allow_public_ranges` is

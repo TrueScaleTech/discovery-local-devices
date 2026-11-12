@@ -49,15 +49,25 @@ changes how the parser reports types, that is where it will show.
 
 ## The desktop app
 
-It lives in `src/discovery_now/gui/`. Everything that decides what the window
-shows (filters, search, counts, wording) is in `viewmodel.py` and has no Qt in it,
-so it is tested without a display in `tests/test_gui_viewmodel.py`. Put new
-decisions there, and keep the widgets a thin layer that draws them.
+It lives in `src/discovery_now/gui/`, and it is built so that most of it can be
+tested without a display:
 
-`tests/test_gui.py` drives the real window on Qt's `offscreen` platform: it
-selects rows, types into fields and clicks buttons, with the network replaced by a
-fake scan. Colours are tokens in `theme.py`; do not hard-code one elsewhere, or
-one of the two appearances will go wrong.
+- `viewmodel.py` decides what the devices list shows (filters, search, counts,
+  wording) and `topology.py` decides where the map puts things. Neither imports
+  Qt. Put new decisions there, and keep the widgets a layer that draws them.
+- `theme.py` holds every colour and measurement, built from the three choices the
+  user makes. Never hard-code a colour elsewhere: one of the two appearances will
+  go wrong, and the contrast tests will not be watching it.
+- `icons.py` draws every mark the app shows, on one 24-unit grid. Add an icon
+  there rather than reaching for a character from a font.
+- `widgets.py` holds the shapes that repeat (a card, a row of settings, a group
+  of chips). Use them, so the screens keep one vocabulary.
+
+Tests: `tests/test_gui_viewmodel.py` and `tests/test_topology.py` need neither Qt
+nor a display. `tests/test_gui.py` and `tests/test_gui_screens.py` drive the real
+window on Qt's `offscreen` platform, with the network replaced by a fake scan:
+they select rows, type into fields and click buttons. The contrast of every
+accent in both appearances is checked in `tests/test_gui.py`.
 
 ## What belongs here, and what does not
 
