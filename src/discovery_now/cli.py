@@ -387,6 +387,17 @@ def export_devices(
     console.print(f"Exported {len(found)} device(s) to {output}.{note}")
 
 
+@app.command()
+def menu() -> None:
+    """Open an interactive menu to browse every command and run it with any options."""
+    from .menu import MenuUnavailableError, run_menu
+
+    try:
+        run_menu(app, console=console)
+    except MenuUnavailableError as error:
+        _fail(str(error))
+
+
 # -- devices -----------------------------------------------------------------
 
 
