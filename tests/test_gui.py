@@ -13,6 +13,7 @@ import pytest
 
 pytest.importorskip("PySide6.QtWidgets")
 
+from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication, QFileDialog
 
 from discovery_now import export as exporting
@@ -27,6 +28,7 @@ from discovery_now.gui.window import (
     _PAGE_NO_MATCH,
     _PAGE_TABLE,
     MainWindow,
+    Screen,
 )
 from discovery_now.models import Observation, utcnow
 from discovery_now.net import TargetError
@@ -77,6 +79,7 @@ def make_window(app: QApplication, db: Path, tmp_path: Path) -> Iterator[Callabl
             prefs=options.pop("prefs", Preferences(tmp_path / "gui.ini")),
             autostart=False,
             use_tray=False,
+            find_addresses=False,
             **options,
         )
         window.show()
@@ -87,6 +90,13 @@ def make_window(app: QApplication, db: Path, tmp_path: Path) -> Iterator[Callabl
     yield factory
     for window in opened:
         window.close()
+        window.deleteLater()
+    # processEvents() alone does not run deferred deletions, so without this the
+    # windows pile up: Qt restyles and lays out every widget it still owns, and
+    # each later test pays for all the ones before it.
+    app.processEvents()
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    opened.clear()
 
 
 def fill(db: Path, *observations: Observation, age: timedelta = timedelta(days=30)) -> None:
@@ -551,7 +561,7 @@ class TestNotifications:
         window = make_window()
         tray = FakeTray()
         window._tray = tray  # type: ignore[assignment]
-        window._notify_action.setChecked(False)
+        window.settings_page._notify.setChecked(False)
         self.run_scan_with(app, window, monkeypatch, [ROUTER, PRINTER])
         assert tray.messages == []
 
@@ -564,25 +574,25 @@ class TestAutoScan:
 
     def test_it_can_be_turned_off(self, make_window: Callable[..., MainWindow]) -> None:
         window = make_window()
-        window._auto_check.setChecked(False)
+        window.settings_page._auto.setChecked(False)
         assert not window._auto.isActive()
-        assert not window._interval.isEnabled()
+        assert not window.settings_page._interval.isEnabled()
 
     def test_the_interval_can_be_changed(self, make_window: Callable[..., MainWindow]) -> None:
         window = make_window()
-        window._interval.setCurrentIndex(window._interval.findData(15))
+        window.settings_page._interval.setCurrentIndex(window.settings_page._interval.findData(15))
         assert window._auto.interval() == 15 * 60_000
 
     def test_the_choice_is_remembered(
         self, tmp_path: Path, make_window: Callable[..., MainWindow]
     ) -> None:
         window = make_window(prefs=Preferences(tmp_path / "gui.ini"))
-        window._auto_check.setChecked(False)
-        window._interval.setCurrentIndex(window._interval.findData(30))
+        window.settings_page._auto.setChecked(False)
+        window.settings_page._interval.setCurrentIndex(window.settings_page._interval.findData(30))
         window.close()
         again = make_window(prefs=Preferences(tmp_path / "gui.ini"))
-        assert not again._auto_check.isChecked()
-        assert again._interval.currentData() == 30
+        assert not again.settings_page._auto.isChecked()
+        assert again.settings_page._interval.currentData() == 30
 
     def test_the_config_file_sets_the_first_interval(
         self, tmp_path: Path, make_window: Callable[..., MainWindow]
@@ -591,7 +601,7 @@ class TestAutoScan:
             settings=Settings(watch_interval=900),
             prefs=Preferences(tmp_path / "fresh.ini", default_interval=15),
         )
-        assert window._interval.currentData() == 15
+        assert window.settings_page._interval.currentData() == 15
 
 
 class TestExport:
@@ -640,7 +650,7 @@ class TestExport:
     ) -> None:
         fill(db, ROUTER)
         window = make_window()
-        window._redact_action.setChecked(True)
+        window.settings_page._redact.setChecked(True)
         target = tmp_path / "devices.csv"
         self.choose(monkeypatch, target)
         window.export(exporting.ExportFormat.CSV)
@@ -691,11 +701,12 @@ class TestTheActivityLog:
         assert not window._activity_empty.isHidden()
         assert window._activity.isHidden()
 
-    def test_the_tabs_switch_pages(self, make_window: Callable[..., MainWindow]) -> None:
+    def test_the_rail_switches_screens(self, make_window: Callable[..., MainWindow]) -> None:
         window = make_window()
-        window.show_tab(1)
-        assert window._pages.currentIndex() == 1
-        assert window._tab_buttons[1].isChecked()
+        for screen in Screen:
+            window.show_screen(screen)
+            assert window.screen_shown is screen
+            assert window._nav[screen].isChecked()
 
 
 class TestAppearance:
@@ -745,7 +756,7 @@ class TestAppearance:
     ) -> None:
         fill(db, ROUTER)
         window = make_window()
-        window.on_theme_changed()  # must not raise
+        window.restyle()  # must not raise
 
     def test_the_icon_has_every_size(self, app: QApplication) -> None:
         from discovery_now.gui.icons import app_icon

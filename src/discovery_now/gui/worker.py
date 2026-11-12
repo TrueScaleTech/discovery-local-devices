@@ -16,7 +16,7 @@ from PySide6.QtCore import QObject, Signal
 
 from ..config import Settings
 from ..discovery import run_scan
-from ..net import TargetError
+from ..net import TargetError, default_gateways, local_macs
 from ..store import Store
 
 _ONE_DAY = timedelta(days=1)
@@ -31,6 +31,8 @@ class ScanRunner(QObject):
     finished = Signal(object, object, bool)
     #: A short explanation of why the scan could not run.
     failed = Signal(str)
+    #: The default gateways, and this machine's own addresses, for the map.
+    addresses = Signal(list, list)
 
     def __init__(
         self,
@@ -59,6 +61,22 @@ class ScanRunner(QObject):
 
     def _release(self, *_ignored: object) -> None:
         self._busy = False
+
+    def find_addresses(self) -> None:
+        """Look up the gateways and this machine's addresses, off the window's thread.
+
+        Reading the routing table means starting a command and waiting on it, which
+        would hold the window still for as long as it takes.
+        """
+        threading.Thread(target=self._addresses, name="addresses", daemon=True).start()
+
+    def _addresses(self) -> None:
+        try:
+            self.addresses.emit(default_gateways(), list(local_macs()))
+        except OSError:
+            # The map works without this; it falls back to working the gateway
+            # out from the devices themselves.
+            self.addresses.emit([], [])
 
     def _run(self, settings: Settings) -> None:
         try:

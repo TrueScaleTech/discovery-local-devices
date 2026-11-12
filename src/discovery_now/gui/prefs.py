@@ -1,8 +1,11 @@
-"""The app's own preferences: window layout and a few switches.
+"""What the desktop app remembers between runs.
 
 Kept in a plain ``.ini`` file next to the configuration file rather than in the
 Windows registry, so everything Discovery Now remembers lives in two folders the
 user can see, copy and delete.
+
+Only the app's own preferences live here. Anything that changes what a scan does
+belongs in ``config.toml``, which the command line reads too.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from pathlib import Path
 from PySide6.QtCore import QByteArray, QSettings
 
 from ..config import config_dir
+from .theme import ACCENTS, DEFAULT_ACCENT, Density, Mode
 
 #: Choices offered for how often to scan on its own, in minutes.
 INTERVALS = (1, 5, 15, 30, 60)
@@ -22,7 +26,7 @@ def prefs_path() -> Path:
 
 
 class Preferences:
-    """Read and write what the window remembers between runs."""
+    """Read and write what the window remembers."""
 
     def __init__(self, path: Path | None = None, *, default_interval: int = 5) -> None:
         target = path or prefs_path()
@@ -30,11 +34,53 @@ class Preferences:
         self._settings = QSettings(str(target), QSettings.Format.IniFormat)
         self._default_interval = default_interval
 
+    def _text(self, key: str, fallback: str) -> str:
+        value = self._settings.value(key, fallback)
+        return value if isinstance(value, str) else fallback
+
+    def _flag(self, key: str, fallback: bool) -> bool:
+        return bool(self._settings.value(key, fallback, type=bool))
+
+    # -- appearance --------------------------------------------------------
+
+    @property
+    def mode(self) -> Mode:
+        """Light, dark, or whatever the system is asking for."""
+        try:
+            return Mode(self._text("appearance", Mode.SYSTEM.value))
+        except ValueError:
+            return Mode.SYSTEM
+
+    @mode.setter
+    def mode(self, value: Mode) -> None:
+        self._settings.setValue("appearance", value.value)
+
+    @property
+    def accent(self) -> str:
+        """The key of the chosen accent, always one we actually offer."""
+        chosen = self._text("accent", DEFAULT_ACCENT.key)
+        return chosen if any(a.key == chosen for a in ACCENTS) else DEFAULT_ACCENT.key
+
+    @accent.setter
+    def accent(self, value: str) -> None:
+        self._settings.setValue("accent", value)
+
+    @property
+    def density(self) -> Density:
+        try:
+            return Density(self._text("density", Density.COMFORTABLE.value))
+        except ValueError:
+            return Density.COMFORTABLE
+
+    @density.setter
+    def density(self, value: Density) -> None:
+        self._settings.setValue("density", value.value)
+
     # -- switches ----------------------------------------------------------
 
     @property
     def auto_scan(self) -> bool:
-        return bool(self._settings.value("auto_scan", True, type=bool))
+        return self._flag("auto_scan", True)
 
     @auto_scan.setter
     def auto_scan(self, value: bool) -> None:
@@ -51,7 +97,7 @@ class Preferences:
 
     @property
     def notifications(self) -> bool:
-        return bool(self._settings.value("notifications", True, type=bool))
+        return self._flag("notifications", True)
 
     @notifications.setter
     def notifications(self, value: bool) -> None:
@@ -59,7 +105,7 @@ class Preferences:
 
     @property
     def redact_exports(self) -> bool:
-        return bool(self._settings.value("redact_exports", False, type=bool))
+        return self._flag("redact_exports", False)
 
     @redact_exports.setter
     def redact_exports(self, value: bool) -> None:

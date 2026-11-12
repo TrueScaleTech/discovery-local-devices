@@ -10,6 +10,7 @@ from PySide6.QtCore import (
     QAbstractTableModel,
     QModelIndex,
     QPersistentModelIndex,
+    QPointF,
     QRectF,
     QSortFilterProxyModel,
     Qt,
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
 from ..fingerprint import kind_of
 from ..models import Device, Event, EventKind, utcnow
 from . import theme
+from .icons import status_dot
 from .viewmodel import (
     Filter,
     address_key,
@@ -60,18 +62,18 @@ NAME, STATUS, ADDRESS, MAC, VENDOR, KIND, PORTS, FIRST_SEEN, LAST_SEEN = range(l
 _NOTHING = "—"
 
 #: Columns that start hidden: they are in the detail panel, and the table is tight.
-HIDDEN_BY_DEFAULT = (PORTS, FIRST_SEEN)
+HIDDEN_BY_DEFAULT = (VENDOR, PORTS, FIRST_SEEN)
 
 #: Starting width of every column but the name, which takes whatever is left.
 COLUMN_WIDTHS = {
-    STATUS: 85,
-    ADDRESS: 118,
-    MAC: 160,
+    STATUS: 78,
+    ADDRESS: 112,
+    MAC: 148,
     VENDOR: 130,
-    KIND: 208,
-    PORTS: 130,
-    FIRST_SEEN: 100,
-    LAST_SEEN: 85,
+    KIND: 168,
+    PORTS: 120,
+    FIRST_SEEN: 96,
+    LAST_SEEN: 84,
 }
 
 
@@ -181,7 +183,7 @@ class DevicesModel(QAbstractTableModel):
         now = utcnow()
         values: dict[int, str | None] = {
             NAME: display_name(device),
-            STATUS: "● Online" if device.online else "○ Offline",
+            STATUS: "Online" if device.online else "Offline",
             ADDRESS: device.ip,
             MAC: device.mac,
             VENDOR: device.vendor,
@@ -302,6 +304,15 @@ class CellDelegate(QStyledItemDelegate):
         badge = str(index.data(BADGE_ROLE) or "")
         rect = opt.rect.adjusted(8, 0, -8, 0)
         metrics = opt.fontMetrics
+
+        if index.column() == STATUS:
+            device = index.data(DEVICE_ROLE)
+            if device is not None:
+                tokens = theme.current()
+                centre = QPointF(rect.left() + 5, rect.center().y() + 1)
+                dot = tokens.online if device.online else tokens.offline
+                status_dot(painter, centre, dot, online=device.online)
+                rect = rect.adjusted(16, 0, 0, 0)
 
         pill_font = QFont(opt.font)
         pill_font.setPointSizeF(max(7.5, opt.font.pointSizeF() - 2))

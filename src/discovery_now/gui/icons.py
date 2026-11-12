@@ -368,6 +368,44 @@ def icon(name: str, colour: str, size: int = 18) -> QIcon:
     return made
 
 
+def write_glyph(
+    name: str, colour: str, *, size: int = 13, width: float = 2.4, turn: float = 0.0
+) -> str:
+    """Draw one icon to a file beside the settings, and give back its path.
+
+    Qt style sheets can only point at a file, so the few marks they need (the tick
+    in a checkbox, the arrows on a number box) are written out once per colour.
+    Returns an empty string when it cannot be written, so a caller can fall back
+    rather than fail over a checkbox.
+    """
+    from ..config import config_dir
+
+    target = config_dir() / f"glyph-{name}-{colour.lstrip('#')}-{size}-{int(turn)}.png"
+    if target.exists():
+        return target.as_posix()
+    image = QImage(size, size, QImage.Format.Format_ARGB32)
+    image.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(image)
+    if turn:
+        painter.translate(size / 2, size / 2)
+        painter.rotate(turn)
+        painter.translate(-size / 2, -size / 2)
+    paint(painter, name, QRectF(0, 0, size, size), colour, width=width)
+    painter.end()
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if not image.save(str(target)):
+            return ""
+    except OSError:
+        return ""
+    return target.as_posix()
+
+
+def write_check_mark(colour: str, size: int = 13) -> str:
+    """The tick for a checked box."""
+    return write_glyph("check", colour, size=size, width=3.0)
+
+
 def forget_cached_icons() -> None:
     """Drop the cache, so every icon is redrawn after the appearance changes."""
     _cache.clear()

@@ -260,6 +260,20 @@ def resolve_dark(app: QApplication, mode: Mode) -> bool:
     return system_is_dark(app)
 
 
+def check_mark(colour: str) -> str:
+    """Path to a tick drawn in ``colour``, for the checkbox style sheet."""
+    from .icons import write_check_mark
+
+    return write_check_mark(colour)
+
+
+def arrow(colour: str, *, up: bool) -> str:
+    """Path to a small chevron, for the arrows on a number box."""
+    from .icons import write_glyph
+
+    return write_glyph("chevron", colour, size=11, width=2.6, turn=180.0 if up else 0.0)
+
+
 def _palette(t: Tokens) -> QPalette:
     palette = QPalette()
     roles = {
@@ -291,6 +305,8 @@ def stylesheet(t: Tokens) -> str:
     in its own colours included: scrollbars, menus, tooltips, the text cursor and
     the focus ring.
     """
+    tick = check_mark(t.on_accent)
+    up, down = arrow(t.muted, up=True), arrow(t.muted, up=False)
     return f"""
 * {{ outline: 0; }}
 
@@ -395,17 +411,29 @@ QLabel#section {{ font-size: 11pt; font-weight: 700; }}
 QLabel#heading {{ color: {t.muted}; font-weight: 600; }}
 
 QCheckBox, QRadioButton {{ color: {t.text}; spacing: 8px; }}
-QCheckBox::indicator, QRadioButton::indicator {{ width: 16px; height: 16px; }}
+QCheckBox::indicator, QRadioButton::indicator {{ width: 17px; height: 17px; }}
 QCheckBox::indicator {{
     border: 1px solid {t.border_strong}; border-radius: 4px; background: {t.surface};
 }}
-QCheckBox::indicator:hover {{ border-color: {t.accent}; }}
-QCheckBox::indicator:checked {{ background: {t.accent}; border-color: {t.accent}; }}
-QRadioButton::indicator {{
-    border: 1px solid {t.border_strong}; border-radius: 8px; background: {t.surface};
+QCheckBox::indicator:hover, QRadioButton::indicator:hover {{ border-color: {t.accent}; }}
+QCheckBox::indicator:checked {{
+    background: {t.accent}; border-color: {t.accent}; image: url("{tick}");
 }}
-QRadioButton::indicator:checked {{
-    border: 5px solid {t.accent}; background: {t.surface};
+QCheckBox::indicator:disabled {{ background: {t.sunken}; border-color: {t.border}; }}
+QRadioButton::indicator {{
+    border: 1px solid {t.border_strong}; border-radius: 9px; background: {t.surface};
+}}
+QRadioButton::indicator:checked {{ border: 5px solid {t.accent}; }}
+
+QSpinBox::up-button {{
+    subcontrol-origin: border; subcontrol-position: top right;
+    width: 17px; border: none; background: transparent; margin: 3px 4px 0 0;
+    image: url("{up}");
+}}
+QSpinBox::down-button {{
+    subcontrol-origin: border; subcontrol-position: bottom right;
+    width: 17px; border: none; background: transparent; margin: 0 4px 3px 0;
+    image: url("{down}");
 }}
 
 QStatusBar {{ background: {t.window}; color: {t.muted}; border-top: 1px solid {t.border}; }}

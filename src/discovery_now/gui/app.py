@@ -12,6 +12,7 @@ from .. import APP_NAME
 from ..config import Settings
 from . import theme
 from .icons import app_icon
+from .prefs import Preferences
 from .window import MainWindow
 
 #: Lets Windows group the taskbar button under our icon, not under python.exe's.
@@ -33,14 +34,19 @@ def run(argv: list[str] | None = None) -> int:
     app.setApplicationName(APP_NAME)
     app.setOrganizationName("TrueScaleTech")
     app.setWindowIcon(app_icon())
-    theme.apply(app)
+    # The saved appearance goes on before any widget exists, so nothing is built
+    # with the wrong measurements and then restyled in front of the user.
+    prefs = Preferences()
+    theme.apply(
+        app,
+        mode=prefs.mode,
+        accent=theme.accent_for(prefs.accent),
+        density=prefs.density,
+    )
 
-    window = MainWindow(Settings.load())
+    window = MainWindow(Settings.load(), prefs=prefs)
 
-    def restyle() -> None:
-        theme.apply(app)
-        window.on_theme_changed()
-
-    app.styleHints().colorSchemeChanged.connect(restyle)
+    # Only matters while the appearance is set to follow the system.
+    app.styleHints().colorSchemeChanged.connect(window.restyle)
     window.show()
     return app.exec()
