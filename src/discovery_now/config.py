@@ -58,6 +58,16 @@ def database_path() -> Path:
     return data_dir() / "inventory.db"
 
 
+def _toml_bool(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def _toml_list(values: list[str] | list[int]) -> str:
+    """A TOML array of strings or of numbers, on one line."""
+    parts = [f'"{item}"' if isinstance(item, str) else str(item) for item in values]
+    return "[" + ", ".join(parts) + "]"
+
+
 @dataclass(slots=True)
 class Settings:
     """Everything the user can tune, with defaults that are safe on any network."""
@@ -114,6 +124,38 @@ class Settings:
             return target
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(DEFAULT_CONFIG_TEMPLATE, encoding="utf-8")
+        return target
+
+    def as_toml(self) -> str:
+        """These settings as the text of a configuration file.
+
+        Every value is written out rather than left to the defaults, so the file
+        says what the program will actually do. Reading it back gives the same
+        settings, which is what lets the desktop app and the command line share
+        one file without either of them losing the other's changes.
+        """
+        return (
+            "# Discovery Now configuration.\n"
+            "# Written by the app; safe to edit by hand.\n"
+            "\n[scan]\n"
+            f"subnets = {_toml_list(self.subnets)}\n"
+            f"allow_public_ranges = {_toml_bool(self.allow_public_ranges)}\n"
+            f"max_hosts_per_subnet = {self.max_hosts_per_subnet}\n"
+            f"workers = {self.workers}\n"
+            f"timeout = {self.timeout}\n"
+            f"resolve_hostnames = {_toml_bool(self.resolve_hostnames)}\n"
+            f"ports = {_toml_list(self.ports)}\n"
+            "\n[monitor]\n"
+            f"offline_after = {self.offline_after}\n"
+            f"new_device_days = {self.new_device_days}\n"
+            f"watch_interval = {self.watch_interval}\n"
+        )
+
+    def save(self, path: Path | None = None) -> Path:
+        """Write these settings to the configuration file, replacing what is there."""
+        target = path or config_path()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(self.as_toml(), encoding="utf-8")
         return target
 
 
