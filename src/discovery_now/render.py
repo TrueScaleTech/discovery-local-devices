@@ -14,7 +14,7 @@ from typing import Any
 from rich.table import Table
 from rich.text import Text
 
-from .fingerprint import guess_kind
+from .fingerprint import kind_of
 from .models import Device, Event, Observation, utcnow
 
 _NO_VALUE = Text("-", style="dim")
@@ -77,9 +77,7 @@ def devices_table(
     table.add_column("Last seen", justify="right")
 
     for device in devices:
-        kind = guess_kind(
-            vendor=device.vendor, hostname=device.hostname, open_ports=device.open_ports
-        )
+        kind = kind_of(device)
         table.add_row(
             str(device.id),
             status_text(device, new_within=new_within, now=moment),
@@ -107,7 +105,7 @@ def observations_table(observations: Sequence[Observation], *, title: str | None
     table.add_column("RTT", justify="right")
 
     for item in observations:
-        kind = guess_kind(vendor=item.vendor, hostname=item.hostname, open_ports=item.open_ports)
+        kind = kind_of(item)
         table.add_row(
             item.ip,
             _optional(item.mac),
@@ -169,7 +167,7 @@ def device_detail(device: Device, events: Sequence[Event], *, new_within: timede
     table.add_column(style="bold", justify="right")
     table.add_column()
 
-    kind = guess_kind(vendor=device.vendor, hostname=device.hostname, open_ports=device.open_ports)
+    kind = kind_of(device)
     rows: list[tuple[str, Any]] = [
         ("Name", device.name),
         ("State", status_text(device, new_within=new_within)),
@@ -207,9 +205,7 @@ def device_as_dict(device: Device, *, new_within: timedelta) -> dict[str, Any]:
         "mac": device.mac,
         "hostname": device.hostname,
         "vendor": device.vendor,
-        "kind": guess_kind(
-            vendor=device.vendor, hostname=device.hostname, open_ports=device.open_ports
-        ),
+        "kind": kind_of(device),
         "label": device.label,
         "notes": device.notes,
         "open_ports": list(device.open_ports),
@@ -228,11 +224,7 @@ def observation_as_dict(observation: Observation) -> dict[str, Any]:
         "mac": observation.mac,
         "hostname": observation.hostname,
         "vendor": observation.vendor,
-        "kind": guess_kind(
-            vendor=observation.vendor,
-            hostname=observation.hostname,
-            open_ports=observation.open_ports,
-        ),
+        "kind": kind_of(observation),
         "open_ports": list(observation.open_ports),
         "methods": sorted(observation.methods),
         "rtt_ms": observation.rtt_ms,
