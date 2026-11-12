@@ -3,8 +3,8 @@
 Every colour the app draws comes from a :class:`Tokens` built here, so the light
 and the dark appearance stay in step and no widget invents a colour of its own.
 
-Three things are the user's to choose: the appearance (follow the system, or pin
-light or dark), the accent, and the density. The accent colours the primary
+Two things are the user's to choose: the appearance (follow the system, or pin
+light or dark, or true black) and the accent. The accent colours the primary
 action and the current selection, and nothing else: the colours that carry meaning
 (online, offline, new, warning) keep their own hue whatever the accent is, because
 a state that changed colour with a preference would stop meaning anything.
@@ -73,17 +73,6 @@ class Mode(StrEnum):
         }[self]
 
 
-class Density(StrEnum):
-    """How much room the lists and panels take."""
-
-    COMFORTABLE = "comfortable"
-    COMPACT = "compact"
-
-    @property
-    def label(self) -> str:
-        return {Density.COMFORTABLE: "Comfortable", Density.COMPACT: "Compact"}[self]
-
-
 @dataclass(frozen=True, slots=True)
 class Accent:
     """One accent colour, in the two shades the two appearances need."""
@@ -134,7 +123,6 @@ class Tokens:
     #: True black rather than dark grey: the dark appearance, with the grey taken out.
     black: bool
     accent_key: str
-    density: Density
 
     # Surfaces, from the furthest back to the nearest.
     rail: str
@@ -232,17 +220,14 @@ _BLACK_NEUTRALS = {
     "shadow": "#000000",
 }
 
-_METRICS = {
-    Density.COMFORTABLE: {"row_height": 44, "gap": 14, "pad": 18, "radius": 8, "font_pt": 10.5},
-    Density.COMPACT: {"row_height": 30, "gap": 7, "pad": 10, "radius": 6, "font_pt": 9.0},
-}
+# The measurements are fixed: one spacing, the comfortable one.
+_METRICS = {"row_height": 44, "gap": 14, "pad": 18, "radius": 8, "font_pt": 10.5}
 
 
 def tokens_for(
     *,
     dark: bool,
     accent: Accent = DEFAULT_ACCENT,
-    density: Density = Density.COMFORTABLE,
     black: bool = False,
 ) -> Tokens:
     """Build the whole palette from the choices the user makes.
@@ -259,12 +244,11 @@ def tokens_for(
     # Hover and pressed move towards the text colour, so they stay visible in both
     # appearances instead of darkening into the background of one of them.
     towards = "#ffffff" if dark else "#000000"
-    metrics = _METRICS[density]
+    metrics = _METRICS
     return Tokens(
         dark=dark,
         black=black,
         accent_key=accent.key,
-        density=density,
         accent=fill,
         accent_hover=mix(towards, fill, 0.12),
         accent_pressed=mix(towards, fill, 0.22),
@@ -522,7 +506,6 @@ def apply(
     *,
     mode: Mode = Mode.SYSTEM,
     accent: Accent = DEFAULT_ACCENT,
-    density: Density = Density.COMFORTABLE,
 ) -> Tokens:
     """Style the whole application, and return the tokens it now uses."""
     # One appearance at a time, read from everywhere.
@@ -530,7 +513,6 @@ def apply(
     _current = tokens_for(
         dark=resolve_dark(app, mode),
         accent=accent,
-        density=density,
         black=mode is Mode.BLACK,
     )
     app.setStyle("Fusion")

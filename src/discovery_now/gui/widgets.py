@@ -101,7 +101,7 @@ class Card(QFrame):
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 
     def restyle(self) -> None:
-        """Take the spacing of the density now in use."""
+        """Take the spacing now in use."""
         tokens = theme.current()
         self._outer.setContentsMargins(tokens.pad, tokens.pad, tokens.pad, tokens.pad)
         self._outer.setSpacing(tokens.gap)

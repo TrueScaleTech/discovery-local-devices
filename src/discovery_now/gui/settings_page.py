@@ -103,7 +103,7 @@ class Swatch(QPushButton):
 class SettingsPage(QScrollArea):
     """Everything the user can change, in one scrolling column."""
 
-    #: The appearance, accent or density changed; the window restyles itself.
+    #: The appearance or accent changed; the window restyles itself.
     appearance_changed = Signal()
     #: Automatic scanning was turned on or off, or its interval changed.
     schedule_changed = Signal()
@@ -167,12 +167,6 @@ class SettingsPage(QScrollArea):
             row.addWidget(swatch)
             self._swatches.append(swatch)
         card.add_row("Accent", swatches, "Colours the main button and the selected row.")
-
-        self._density = Segmented()
-        for density in theme.Density:
-            self._density.add(density.value, density.label)
-        self._density.picked.connect(lambda key: self._set_density(theme.Density(key)))
-        card.add_row("Density", self._density, "How much room the lists and panels take.")
         return card
 
     def _scanning_card(self) -> Card:
@@ -302,7 +296,6 @@ class SettingsPage(QScrollArea):
 
     def _load(self) -> None:
         self._mode.choose(self._prefs.mode.value)
-        self._density.choose(self._prefs.density.value)
         for swatch in self._swatches:
             swatch.setChecked(swatch.accent.key == self._prefs.accent)
         self._auto.setChecked(self._prefs.auto_scan)
@@ -324,11 +317,6 @@ class SettingsPage(QScrollArea):
         self._prefs.accent = accent.key
         for swatch in self._swatches:
             swatch.setChecked(swatch.accent.key == accent.key)
-        self.appearance_changed.emit()
-
-    def _set_density(self, density: theme.Density) -> None:
-        self._prefs.density = density
-        self._density.choose(density.value)
         self.appearance_changed.emit()
 
     def _on_schedule(self, *_ignored: object) -> None:
@@ -372,7 +360,7 @@ class SettingsPage(QScrollArea):
         self.scan_changed.emit()
 
     def restyle(self) -> None:
-        """Take the spacing of the density now in use, and redraw."""
+        """Take the spacing now in use, and redraw."""
         tokens = theme.current()
         body = self.widget()
         layout = body.layout() if body is not None else None

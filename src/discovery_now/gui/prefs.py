@@ -16,7 +16,7 @@ from pathlib import Path
 from PySide6.QtCore import QByteArray, QSettings
 
 from ..config import config_dir
-from .theme import ACCENTS, DEFAULT_ACCENT, Density, Mode
+from .theme import ACCENTS, DEFAULT_ACCENT, Mode
 
 #: Choices offered for how often to scan on its own, in minutes.
 INTERVALS = (1, 5, 15, 30, 60)
@@ -65,17 +65,6 @@ class Preferences:
     @accent.setter
     def accent(self, value: str) -> None:
         self._settings.setValue("accent", value)
-
-    @property
-    def density(self) -> Density:
-        try:
-            return Density(self._text("density", Density.COMFORTABLE.value))
-        except ValueError:
-            return Density.COMFORTABLE
-
-    @density.setter
-    def density(self, value: Density) -> None:
-        self._settings.setValue("density", value.value)
 
     # -- switches ----------------------------------------------------------
 

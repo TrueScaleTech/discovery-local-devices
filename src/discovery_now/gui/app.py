@@ -41,7 +41,6 @@ def run(argv: list[str] | None = None) -> int:
         app,
         mode=prefs.mode,
         accent=theme.accent_for(prefs.accent),
-        density=prefs.density,
     )
 
     window = MainWindow(Settings.load(), prefs=prefs)

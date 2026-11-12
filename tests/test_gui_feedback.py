@@ -156,28 +156,13 @@ class TestTheChipsReallyWork:
         window.show_screen(Screen.SETTINGS)
         return window
 
-    def test_clicking_compact_makes_the_rows_shorter(self, window: MainWindow) -> None:
-        before = window._table.verticalHeader().defaultSectionSize()
-        window.settings_page._density.button("compact").click()
-        after = window._table.verticalHeader().defaultSectionSize()
-        assert theme.current().density is theme.Density.COMPACT
-        assert after < before
-        assert window.settings_page._density.chosen() == "compact"
-
-    def test_clicking_comfortable_puts_them_back(self, window: MainWindow) -> None:
-        window.settings_page._density.button("compact").click()
-        window.settings_page._density.button("comfortable").click()
-        assert theme.current().density is theme.Density.COMFORTABLE
-        assert window._table.verticalHeader().defaultSectionSize() == theme.current().row_height
-
-    def test_density_changes_the_cards_spacing_too(self, window: MainWindow) -> None:
-        from discovery_now.gui.widgets import Card
-
-        card = window.settings_page.findChildren(Card)[0]
-        roomy = card.layout().contentsMargins().left()  # type: ignore[union-attr]
-        window.settings_page._density.button("compact").click()
-        tight = card.layout().contentsMargins().left()  # type: ignore[union-attr]
-        assert tight < roomy
+    def test_there_is_no_density_choice_and_the_rows_keep_one_height(
+        self, window: MainWindow
+    ) -> None:
+        assert not hasattr(window.settings_page, "_density")
+        assert not hasattr(theme, "Density")
+        window.settings_page._mode.button("dark").click()
+        assert window._table.verticalHeader().defaultSectionSize() == 44
 
     @pytest.mark.parametrize("key", ["light", "dark", "black"])
     def test_clicking_an_appearance_applies_and_remembers_it(
@@ -189,10 +174,10 @@ class TestTheChipsReallyWork:
         assert theme.current().black is (key == "black")
 
     def test_a_chip_is_never_left_unchecked_by_clicking_it_twice(self, window: MainWindow) -> None:
-        chip = window.settings_page._density.button("compact")
+        chip = window.settings_page._mode.button("dark")
         chip.click()
         chip.click()
-        assert window.settings_page._density.chosen() == "compact"
+        assert window.settings_page._mode.chosen() == "dark"
 
     def test_clicking_an_accent_swatch_applies_it(self, window: MainWindow) -> None:
         swatch = window.settings_page._swatches[2]

@@ -920,10 +920,9 @@ class MainWindow(QMainWindow):
                 theme.resolve_dark(app, self._prefs.mode),
                 self._prefs.mode is theme.Mode.BLACK,
                 accent.key,
-                self._prefs.density,
             )
-            if (in_use.dark, in_use.black, in_use.accent_key, in_use.density) != wanted:
-                theme.apply(app, mode=self._prefs.mode, accent=accent, density=self._prefs.density)
+            if (in_use.dark, in_use.black, in_use.accent_key) != wanted:
+                theme.apply(app, mode=self._prefs.mode, accent=accent)
                 icons.forget_cached_icons()
         tokens = theme.current()
         for screen, button in self._nav.items():

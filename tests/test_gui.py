@@ -739,12 +739,11 @@ class TestAppearance:
         assert theme.accent_for("chartreuse") is theme.DEFAULT_ACCENT
         assert theme.accent_for("violet").key == "violet"
 
-    def test_density_changes_the_measurements_not_the_colours(self) -> None:
-        roomy = theme.tokens_for(dark=False, density=theme.Density.COMFORTABLE)
-        tight = theme.tokens_for(dark=False, density=theme.Density.COMPACT)
-        assert tight.row_height < roomy.row_height
-        assert tight.pad < roomy.pad
-        assert tight.text == roomy.text
+    def test_the_measurements_do_not_change_with_the_appearance(self) -> None:
+        light = theme.tokens_for(dark=False)
+        dark = theme.tokens_for(dark=True, black=True)
+        assert (light.row_height, light.gap, light.pad) == (dark.row_height, dark.gap, dark.pad)
+        assert light.row_height == 44
 
     def test_a_pinned_appearance_beats_the_system(self, app: QApplication) -> None:
         assert theme.resolve_dark(app, theme.Mode.DARK) is True

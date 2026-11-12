@@ -217,8 +217,7 @@ offline, back online, changed address, opened or closed ports.
 ### Settings
 
 - **Appearance.** Follow the system, or pin light, dark or black (true black for
-  OLED screens). Six accents. Two densities, comfortable and compact. A change
-  applies at once.
+  OLED screens). Six accents. A change applies at once.
 - **Scanning.** Scan on its own, from every minute to every hour. Which networks
   to scan, whether to look up names, how many missed scans mean a device is
   offline, how long the `NEW` tag lasts. These are kept in `config.toml`, the

@@ -269,11 +269,6 @@ class TestTheSettingsScreen:
         window.settings_page._set_mode(theme.Mode.LIGHT)
         assert theme.current().dark is False
 
-    def test_density_reaches_the_rows(self, window: MainWindow) -> None:
-        window.settings_page._set_density(theme.Density.COMPACT)
-        assert theme.current().density is theme.Density.COMPACT
-        assert window._table.verticalHeader().defaultSectionSize() == theme.current().row_height
-
     def test_the_schedule_is_saved_and_armed(self, window: MainWindow) -> None:
         page = window.settings_page
         page._auto.setChecked(True)
