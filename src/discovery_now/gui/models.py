@@ -67,7 +67,7 @@ HIDDEN_BY_DEFAULT = (VENDOR, PORTS, FIRST_SEEN)
 #: Starting width of every column but the name, which takes whatever is left.
 COLUMN_WIDTHS = {
     STATUS: 78,
-    ADDRESS: 112,
+    ADDRESS: 126,
     MAC: 148,
     VENDOR: 130,
     KIND: 168,
@@ -237,7 +237,10 @@ class DevicesModel(QAbstractTableModel):
         if column == LAST_SEEN:
             return clock(device.last_seen)
         if column == KIND:
-            return "A guess from the name, the ports and the maker of the network chip."
+            note = "A guess from the name, the ports and the maker of the network chip."
+            # The longest kinds are elided in the column, so say it in full here.
+            kind = kind_of(device)
+            return f"{kind} — {note}" if kind else note
         return None
 
 
