@@ -1,7 +1,9 @@
 ; Inno Setup script for Discovery Now.
 ;
-; Build it after packaging/build-windows.ps1 has produced the app folder:
-;   iscc /DAppVersion=0.1.0 /DSourceDir=..\dist\DiscoveryNow packaging\installer.iss
+; Build it after packaging/build-windows.ps1 has produced the app folder. Every
+; path it needs is passed in, because a build can be sent to any folder:
+;   iscc /DAppVersion=0.1.0 /DSourceDir=..\dist\DiscoveryNow ^
+;        /DOutputDir=..\dist /DIconFile=..\dist\discovery-now.ico packaging\installer.iss
 ;
 ; It installs for the current user only, so nobody has to approve an
 ; administrator prompt to install a tool that needs no administrator rights to run.
@@ -15,6 +17,9 @@
 #ifndef OutputDir
   #define OutputDir "..\dist"
 #endif
+#ifndef IconFile
+  #define IconFile "..\dist\discovery-now.ico"
+#endif
 
 #define AppName "Discovery Now"
 #define AppPublisher "TrueScaleTech"
@@ -22,7 +27,9 @@
 #define AppExe "DiscoveryNow.exe"
 
 [Setup]
-AppId={{8E6B5A4C-2F3D-4B1E-9C7A-DISCOVERYNOW}
+; Identifies the app to Windows for upgrades and uninstalls, so it must never
+; change. It is uuid5 of the project's home, so it can always be re-derived.
+AppId={{FFE16385-97A7-5EB9-A4EF-7ABDF33F5D7C}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
@@ -45,7 +52,7 @@ AllowNoIcons=yes
 LicenseFile=..\LICENSE
 OutputDir={#OutputDir}
 OutputBaseFilename=DiscoveryNow-{#AppVersion}-setup
-SetupIconFile=..\dist\discovery-now.ico
+SetupIconFile={#IconFile}
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 WizardStyle=modern

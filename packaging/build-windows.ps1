@@ -75,6 +75,7 @@ if (-not $iscc) {
     "/DAppVersion=$version" `
     "/DSourceDir=$app" `
     "/DOutputDir=$OutDir" `
+    "/DIconFile=$icon" `
     "$repo\packaging\installer.iss"
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
 Write-Host "Installer $OutDir\DiscoveryNow-$version-setup.exe"
