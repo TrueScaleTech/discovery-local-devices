@@ -280,6 +280,11 @@ def _camera(path: QPainterPath) -> None:
     _poly(path, (17.5, 12), (21.5, 8.5), (21.5, 15.5), (17.5, 12))
 
 
+def _tv(path: QPainterPath) -> None:
+    _box(path, 2.5, 4.5, 19, 12.5, 2)
+    _line(path, 8, 20.5, 16, 20.5)
+
+
 def _phone(path: QPainterPath) -> None:
     _box(path, 7, 2.5, 10, 19, 2)
     _line(path, 10.5, 18.5, 13.5, 18.5)
@@ -317,6 +322,7 @@ SHAPES: dict[str, Draw] = {
     "shield": _shield,
     "printer": _printer,
     "camera": _camera,
+    "tv": _tv,
     "phone": _phone,
     "globe": _globe,
 }
@@ -435,8 +441,8 @@ _KIND_ICONS: tuple[tuple[str, str], ...] = (
     ("iphone", "phone"),
     ("phone", "phone"),
     ("tablet", "phone"),
-    ("media", "camera"),
-    ("tv", "camera"),
+    ("media", "tv"),
+    ("tv", "tv"),
     ("web interface", "globe"),
     ("smart", "scan"),
     ("single-board", "activity"),

@@ -454,3 +454,13 @@ class TestTheWordmark:
                 for y in list(range(margin)) + list(range(image.height() - margin, image.height())):
                     colour = image.pixelColor(x, y)
                     assert not (colour.red() > 200 and colour.green() > 200 and colour.alpha() > 0)
+
+
+class TestKindIcons:
+    def test_a_television_gets_a_television_not_a_camera(self) -> None:
+        assert icons.device_icon("TV or media player") == "tv"
+        assert icons.device_icon("camera") == "camera"
+
+    def test_every_kind_maps_to_an_icon_that_exists(self) -> None:
+        for _needle, name in icons._KIND_ICONS:
+            assert name in icons.SHAPES

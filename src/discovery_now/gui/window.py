@@ -275,7 +275,8 @@ class MainWindow(QMainWindow):
 
         header, controls = self._page_header(Screen.DEVICES)
         self._search = QLineEdit()
-        self._search.setPlaceholderText("Search name, address, MAC, vendor…   (Ctrl+F)")
+        self._search.setPlaceholderText("Search devices   (Ctrl+F)")
+        self._search.setToolTip("Matches the name, address, MAC, vendor, kind and notes.")
         self._search.setClearButtonEnabled(True)
         self._search.setFixedWidth(300)
         self._export_button = QPushButton("  Export")
