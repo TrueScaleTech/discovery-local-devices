@@ -52,14 +52,9 @@ discoverynow interfaces
 # Scan them, and remember what was found
 discoverynow scan
 
-# Read the hardware vendor out of every MAC address (optional, ~3 MB, once)
-discoverynow oui update
-
 # What is on the network?
 discoverynow devices list
 ```
-
-The command is `discoverynow`. The hyphenated `discovery-now` works too.
 
 A scan looks like this (example data):
 
@@ -86,16 +81,15 @@ recognises rather than guessing wrongly.
 ## About the vendor list
 
 The first three bytes of a MAC address identify the company that made the network
-chip. The IEEE publishes who owns which prefix, and `discoverynow oui update`
-downloads that public registry (about 40,000 prefixes, around 1 MB) into your data
-directory. It is what turns `b8:27:eb:...` into "Raspberry Pi" in the Vendor
-column.
+chip. Discovery Now carries a short list of the makers you are most likely to meet
+at home or in a lab (routers, access points, Raspberry Pi, ESP32 smart plugs,
+printers, NAS boxes, phones and consoles) and uses it to fill the Vendor column.
 
-- It is optional: without it, a short built-in list of about 120 common makers is
-  used.
-- It is a one-way download of public data over HTTPS, and only when you run the
-  command. Nothing about your network is sent anywhere.
-- Phones and laptops that randomize their MAC address have no vendor on purpose.
+- The list is part of the program. It is read locally, and Discovery Now never
+  downloads anything.
+- A vendor that is not on the list simply shows as unknown.
+- Phones and laptops that randomize their MAC address have no vendor on purpose:
+  the address was made up by the device, so there is no maker to name.
 
 ## Keeping watch
 
@@ -143,7 +137,6 @@ approved stays flagged, so "I have never looked at this" never looks the same as
 | `devices list` | The inventory, with `--online`, `--new`, `--unapproved` |
 | `devices show` | Everything known about one device, with its history |
 | `devices rename` / `note` / `approve` / `forget` | Annotate the inventory |
-| `oui update` / `info` | Manage the hardware vendor list |
 | `config init` / `show` / `path` | The configuration file |
 
 Every command that shows something accepts `--json`, so the same tool serves a

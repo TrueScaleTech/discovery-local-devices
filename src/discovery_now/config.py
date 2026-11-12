@@ -44,7 +44,7 @@ def config_dir() -> Path:
 
 
 def data_dir() -> Path:
-    """Directory holding the inventory database and the downloaded vendor list."""
+    """Directory holding the inventory database."""
     return Path(os.environ.get("DISCOVERY_NOW_DATA_DIR") or _DIRS.user_data_dir)
 
 

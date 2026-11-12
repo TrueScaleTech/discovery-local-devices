@@ -15,7 +15,7 @@ import typer
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
-from . import APP_NAME, __version__, oui
+from . import APP_NAME, __version__
 from .config import Settings, config_path, database_path
 from .discovery import ScanReport, run_scan
 from .models import Device, ScanOutcome
@@ -46,10 +46,8 @@ app = typer.Typer(
     add_completion=False,
 )
 devices_app = typer.Typer(help="Inspect and annotate the devices in the inventory.")
-oui_app = typer.Typer(help="Manage the hardware vendor list.")
 config_app = typer.Typer(help="Show and create the configuration file.")
 app.add_typer(devices_app, name="devices")
-app.add_typer(oui_app, name="oui")
 app.add_typer(config_app, name="config")
 
 
@@ -430,30 +428,6 @@ def devices_forget(
             typer.confirm(f"Delete {device.name} ({device.ip}) and its history?", abort=True)
         store.forget(device.id)
     console.print(f"{device.name} removed. It will reappear if it is still on the network.")
-
-
-# -- vendor list -------------------------------------------------------------
-
-
-@oui_app.command("update")
-def oui_update() -> None:
-    """Download the full IEEE vendor registry."""
-    console.print(f"Downloading {oui.IEEE_OUI_URL} ...")
-    try:
-        count = oui.update()
-    except (OSError, ValueError) as error:
-        _fail(f"could not update the vendor list: {error}")
-        return
-    console.print(f"Saved {count} vendor prefixes to {oui.oui_cache_path()}.")
-
-
-@oui_app.command("info")
-def oui_info() -> None:
-    """Show which vendor list is in use."""
-    source = "IEEE registry" if oui.using_full_registry() else "built-in short list"
-    console.print(f"{oui.table_size()} prefixes loaded from the {source}.")
-    if not oui.using_full_registry():
-        console.print("[dim]Run `discoverynow oui update` for the full list.[/]")
 
 
 # -- configuration -----------------------------------------------------------

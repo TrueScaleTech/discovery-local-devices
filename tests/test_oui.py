@@ -43,17 +43,3 @@ class TestLookup:
 
     def test_the_built_in_list_is_loaded(self) -> None:
         assert oui.table_size() > 50
-
-
-class TestDownloadedRegistry:
-    def test_a_downloaded_file_adds_prefixes(self) -> None:
-        cache = oui.oui_cache_path()
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text("# test\n3C1122,Acme Networks\n", encoding="utf-8")
-        oui.reset_cache()
-        assert oui.lookup("3c:11:22:98:76:54") == "Acme Networks"
-        assert oui.using_full_registry()
-
-    def test_plain_http_is_refused(self) -> None:
-        with pytest.raises(ValueError, match="HTTPS"):
-            oui.update("http://standards-oui.ieee.org/oui/oui.csv")

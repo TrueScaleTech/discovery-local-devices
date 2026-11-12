@@ -19,15 +19,15 @@ It does:
 - send ICMP echo requests to the addresses of the subnet it is told to scan;
 - open and immediately close TCP connections to a short list of common ports;
 - read the operating system's own ARP cache and interface table;
-- resolve hostnames through the resolver the machine is already configured with;
-- download the public IEEE vendor registry, but only when you ask it to.
+- resolve hostnames through the resolver the machine is already configured with.
 
 It does not:
 
 - authenticate, guess credentials, or attempt any exploitation;
 - capture or inspect network traffic;
 - change anything on the devices it finds;
-- send your inventory anywhere. There is no telemetry and no cloud component.
+- send your inventory anywhere, or fetch anything from the internet. There is no
+  telemetry, no update check and no cloud component.
 
 ## Guards
 

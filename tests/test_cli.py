@@ -89,8 +89,3 @@ class TestConfigCommands:
         assert result.exit_code == 0
         result = runner.invoke(app, ["config", "show"])
         assert json.loads(result.stdout)["offline_after"] == 3
-
-    def test_vendor_list_info(self) -> None:
-        result = runner.invoke(app, ["oui", "info"])
-        assert result.exit_code == 0
-        assert "prefixes loaded" in result.stdout
