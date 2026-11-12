@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work as the README says it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Please do not paste real network data.** MAC addresses, hostnames and device
+        names identify people. Replace them with invented ones
+        (`00:11:22:33:44:01`, `laptop.home`), or export with `--redact`.
+        For a security problem, use the private link under "Report a vulnerability" instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can it be reproduced?
+      description: The command you ran, or the clicks you made in the window.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Output of `discoverynow --version`, or the version in the installer's file name."
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it run?
+      options:
+        - Windows, desktop app (installer or zip)
+        - Windows, command line
+        - Linux, command line
+        - Other
+    validations:
+      required: true
