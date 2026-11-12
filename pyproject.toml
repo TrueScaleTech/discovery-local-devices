@@ -14,6 +14,8 @@ keywords = ["network", "discovery", "inventory", "monitoring", "arp", "homelab"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
+    "Environment :: X11 Applications :: Qt",
+    "Environment :: Win32 (MS Windows)",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
     "Operating System :: Microsoft :: Windows",
@@ -47,6 +49,7 @@ discoverynow = "discovery_now.cli:main"
 [project.urls]
 Homepage = "https://github.com/TrueScaleTech/discovery-local-devices"
 Issues = "https://github.com/TrueScaleTech/discovery-local-devices/issues"
+Releases = "https://github.com/TrueScaleTech/discovery-local-devices/releases"
 
 [tool.hatch.version]
 path = "src/discovery_now/__init__.py"

@@ -55,8 +55,8 @@ tested without a display:
 - `viewmodel.py` decides what the devices list shows (filters, search, counts,
   wording) and `topology.py` decides where the map puts things. Neither imports
   Qt. Put new decisions there, and keep the widgets a layer that draws them.
-- `theme.py` holds every colour and measurement, built from the three choices the
-  user makes. Never hard-code a colour elsewhere: one of the two appearances will
+- `theme.py` holds every colour and measurement, built from the two choices the
+  user makes (the appearance and the accent). Never hard-code a colour elsewhere: one of the two appearances will
   go wrong, and the contrast tests will not be watching it.
 - `icons.py` draws every mark the app shows, on one 24-unit grid. Add an icon
   there rather than reaching for a character from a font.

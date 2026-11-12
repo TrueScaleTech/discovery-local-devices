@@ -11,10 +11,17 @@ address, or opens a port it did not have yesterday.
 It runs as a command-line tool and as a desktop app, both built on the same
 engine and sharing the same inventory.
 
+![The Devices screen: every device on the network, with what is known about the selected one](docs/images/devices.png)
+
+![The Network Topology screen: the router in the middle, every other device around it](docs/images/topology.png)
+
+*Both screenshots use invented devices.*
+
 > **Status: early development (v0.1).** The discovery engine, the inventory, the
-> CLI and a first version of the desktop app (tested on Windows) work. Linux
-> packaging, richer notifications and the security checks listed in the roadmap
-> are not built yet.
+> CLI and the desktop app work. The desktop app is built and tested on Windows,
+> where it comes with an installer. The command line is tested on Windows and
+> Linux. A Linux build of the app, richer notifications and the security checks
+> listed in the roadmap are not built yet.
 
 ## No administrator rights needed
 
@@ -33,14 +40,22 @@ Linux.
 
 ## Install
 
-Python 3.11 or newer.
+**On Windows, without Python:** download the installer (or the zip) from
+[Releases](https://github.com/TrueScaleTech/discovery-local-devices/releases) and
+run it. See [The desktop app](#the-desktop-app).
+
+**From source** (Windows or Linux), with Python 3.11 or newer:
 
 ```bash
 git clone https://github.com/TrueScaleTech/discovery-local-devices.git
 cd discovery-local-devices
 python -m venv .venv
-# Windows: .venv\Scripts\activate
-source .venv/bin/activate
+```
+
+Then activate the environment (`.venv\Scripts\activate` on Windows,
+`source .venv/bin/activate` on Linux and macOS) and install:
+
+```bash
 pip install -e .
 ```
 
@@ -252,7 +267,7 @@ administrator rights, and it leaves the inventory and the settings alone when it
 uninstalls. Neither the installer nor the `.exe` is signed, so Windows SmartScreen
 will warn the first time one is run.
 
-Pushing a tag (`git tag v0.1.2 && git push origin v0.1.2`) builds all of this on
+Pushing a tag (`git tag vX.Y.Z && git push origin vX.Y.Z`) builds all of this on
 a clean Windows machine, checks that the packaged app really starts and scans,
 and attaches the files to a draft release.
 
@@ -394,6 +409,10 @@ prints. It holds MAC addresses, hostnames and the history of your network, so
 treat it as personal data: it never leaves the machine, there is no telemetry and
 no cloud component, and the repository is set up to make committing it difficult.
 
+Nothing of the sort ships with the program. The repository, the installer and the
+zip contain no inventory and no settings: a new install starts with an empty list,
+and its first scan builds yours.
+
 ## Scope
 
 Discovery Now is for networks you own or are authorized to assess. It identifies
@@ -404,11 +423,13 @@ are refused unless you turn that off deliberately. See [SECURITY.md](SECURITY.md
 ## Roadmap
 
 - [x] Discovery engine, inventory, online/offline monitoring, CLI
-- [x] Desktop app: devices, map, activity, settings, themes (Windows)
-- [ ] Desktop app: Linux packaging
+- [x] Interactive menu, and export with the private details removed
+- [x] Desktop app: devices, topology map, activity, settings, themes
+- [x] Windows installer and portable zip, built and attached to every release
+- [ ] Desktop app for Linux (packaging and a release build)
+- [ ] A code-signed Windows installer, so SmartScreen stops warning
 - [ ] Notifications: device offline, webhook, and richer desktop alerts
 - [ ] Security checks: MAC and IP changes, ARP anomalies, rogue DHCP, risky ports
-- [ ] Packaged builds and a tagged release
 
 ## Development
 
