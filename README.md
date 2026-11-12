@@ -71,15 +71,37 @@ A scan looks like this (example data):
 │ 192.168.1.22 │ 00:80:77:00:00:03 │ printer      │ Brother     │ printer           │ 631,9100 │
 │ 192.168.1.31 │ 24:0a:c4:00:00:04 │ -            │ Espressif   │ smart device      │ 80       │
 │ 192.168.1.44 │ 00:11:32:00:00:05 │ nas.home     │ Synology    │ NAS               │ 445,5000 │
-│ 192.168.1.60 │ ae:11:22:00:00:06 │ phone.home   │ -           │ -                 │ -        │
-│ 192.168.1.88 │ 3c:97:0e:00:00:07 │ desktop.home │ Intel       │ file sharing host │ 139, 445 │
+│ 192.168.1.60 │ ae:11:22:00:00:06 │ phone.home   │ -           │ phone             │ -        │
+│ 192.168.1.88 │ 3c:97:0e:00:00:07 │ desktop.home │ Intel       │ computer          │ 139, 445 │
 └──────────────┴───────────────────┴──────────────┴─────────────┴───────────────────┴──────────┘
 
 new      192.168.1.31  Espressif
 ```
 
 That phone has no vendor on purpose: its MAC is randomized, which Discovery Now
-recognises rather than guessing wrongly.
+recognises rather than guessing wrongly. Its kind comes from its name instead.
+
+### How the Kind column is worked out
+
+The Kind is a guess, shown as one, made from whatever the device gives away. The
+clues are weighed from the strongest to the weakest:
+
+1. **The ports it answers on**: a printing port is a printer, DNS plus a web page is
+   a router, and so on.
+2. **The name it gives itself**: `phone`, `iphone`, `tablet`, `laptop`, `macbook`,
+   `desktop`, `printer`, `camera`, `nas`, `tv` and a few more. Longer words are found
+   anywhere in the name (`ana-sphone` is a phone); short ones only as a whole word,
+   so `canasta` is not a NAS. A Windows `DESKTOP-xxxx` name only says *computer*,
+   because Windows gives that name to laptops too.
+3. **The company that made its network chip**, from the built-in list.
+4. **The shape of what it exposes**: file sharing, SSH, a web interface.
+5. **Last of all**, if none of that says anything and the device chose its own MAC
+   address, the Kind reads **Private address auto-assigned**. It describes the
+   address, which is all that is known, rather than guessing a type.
+
+A device with none of these clues stays *unknown*. The Kind is only a hint: to keep
+track of a device whatever it is called, give it a name of your own with
+`discoverynow devices rename`.
 
 ## About the vendor list
 
