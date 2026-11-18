@@ -58,7 +58,7 @@ jobs:
           }
           Write-Host "The packaged app starts and scans."
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-build
           path: |
